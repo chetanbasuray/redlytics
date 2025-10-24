@@ -41,7 +41,7 @@ const KarmaDistributionChart: React.FC<KarmaDistributionChartProps> = ({ data })
           <BarChart 
             layout="vertical" 
             data={data} 
-            margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+            margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
           >
             <defs>
               <linearGradient id="karmaBarGradient" x1="0" y1="0" x2="1" y2="0">
@@ -59,7 +59,7 @@ const KarmaDistributionChart: React.FC<KarmaDistributionChartProps> = ({ data })
             <YAxis 
                 type="category" 
                 dataKey="name" 
-                width={80} 
+                interval={0}
                 stroke="#A0AEC0" 
                 tick={{ fill: '#A0AEC0', fontSize: 12 }} 
                 tickFormatter={(value) => `r/${value}`}

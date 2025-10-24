@@ -2,194 +2,125 @@ import React from 'react';
 import type { AnalysisResult } from '../types';
 import StatCard from './StatCard';
 import ActivityChart from './ActivityChart';
-import KarmaBreakdownChart from './KarmaBreakdownChart';
-import TopLanguagesList from './TopLanguagesList';
-import UserFlairsList from './UserFlairsList';
 import TimeSeriesChart from './TimeSeriesChart';
+import KarmaBreakdownChart from './KarmaBreakdownChart';
 import KarmaDistributionChart from './KarmaDistributionChart';
-import BestWorstComments from './BestWorstComments';
-import AwardsList from './AwardsList';
-import CommentLengthChart from './CommentLengthChart';
-import WordCloud from './WordCloud';
-import GildedContent from './GildedContent';
 import PostTypeChart from './PostTypeChart';
 import SubredditStickinessChart from './SubredditStickinessChart';
 import TopSubredditsList from './TopSubredditsList';
-import SimpleRankedList from './SimpleRankedList';
+import BestWorstComments from './BestWorstComments';
+import GildedContent from './GildedContent';
+import AwardsList from './AwardsList';
+import UserFlairsList from './UserFlairsList';
 import YearlyActivityHeatmap from './YearlyActivityHeatmap';
+import CommentLengthChart from './CommentLengthChart';
 import SentimentBreakdownChart from './SentimentBreakdownChart';
 import SentimentBySubredditChart from './SentimentBySubredditChart';
 import SentimentHighlights from './SentimentHighlights';
-
+import SimpleRankedList from './SimpleRankedList';
+import VocabularyAnalysis from './VocabularyAnalysis';
+import AchievementsList from './AchievementsList';
 
 interface DashboardProps {
   result: AnalysisResult;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ result }) => {
-  const { 
-    username,
-    totalPosts,
-    totalComments,
-    totalKarma,
-    totalPostKarma,
-    totalCommentKarma,
-    accountAgeDays,
-    avgCommentKarma,
-    avgPostKarma,
-    activityByHour,
-    activityByDay,
-    topSubreddits,
-    topWords,
-    topLanguages,
-    mostActiveHour,
-    leastActiveHour,
-    userFlairs,
-    activityOverTime,
-    scoreOverTime,
-    karmaBySubreddit,
-    commentLengthDistribution,
-    bestComment,
-    worstComment,
-    totalAwards,
-    awards,
-    postTypeDistribution,
-    subredditStickiness,
-    gildedContent,
-    topSubredditsByComments,
-    topSubredditsByCommentKarma,
-    topSubredditsByPostKarma,
-    yearlyActivityHeatmap,
-    sentimentBreakdown,
-    sentimentBySubreddit,
-    mostPositiveComment,
-    mostNegativeComment,
-  } = result;
-
   return (
-    <div className="animate-fade-in">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">Analysis for <span className="text-sky-400">u/{username}</span></h2>
-          <p className="text-gray-400">Based on the latest {totalPosts} posts and {totalComments} comments.</p>
-        </div>
-        
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 mb-8">
-            <StatCard title="Total Posts" value={totalPosts.toLocaleString()} />
-            <StatCard title="Total Comments" value={totalComments.toLocaleString()} />
-            <StatCard title="Est. Age (Days)" value={accountAgeDays.toLocaleString()} />
-            <StatCard title="Total Karma" value={totalKarma.toLocaleString()} />
-            <StatCard title="Avg Post Karma" value={avgPostKarma.toLocaleString()} />
-            <StatCard title="Avg Comment Karma" value={avgCommentKarma.toLocaleString()} />
-            {totalAwards > 0 && <StatCard title="Awards Received" value={totalAwards.toLocaleString()} />}
-            <StatCard title="Most Active" value={mostActiveHour} />
-            <StatCard title="Least Active" value={leastActiveHour} />
-        </div>
-        
-        {gildedContent.length > 0 && (
-            <div className="mb-8">
-                <GildedContent items={gildedContent} />
-            </div>
+    <div className="animate-fade-in space-y-8">
+        <header className="text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white">
+                Analysis for <a 
+                                href={`https://www.reddit.com/user/${result.username}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-sky-400 hover:underline"
+                            >
+                                u/{result.username}
+                            </a>
+            </h2>
+        </header>
+
+        <section className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <StatCard title="Total Karma" value={result.totalKarma.toLocaleString()} />
+            <StatCard title="Post Karma" value={result.postKarma.toLocaleString()} />
+            <StatCard title="Comment Karma" value={result.commentKarma.toLocaleString()} />
+            <StatCard title="Total Posts" value={result.totalPosts.toLocaleString()} />
+            <StatCard title="Total Comments" value={result.totalComments.toLocaleString()} />
+            <StatCard title="Avg. Post Karma" value={Math.round(result.avgPostScore)} />
+            <StatCard title="Avg. Comment Karma" value={Math.round(result.avgCommentScore)} />
+            <StatCard title="Data Spans (Days)" value={result.dataSpansDays.toLocaleString()} />
+            <StatCard title="Most Active Day" value={result.mostActiveDay} />
+            <StatCard title="Most Active Hour" value={result.mostActiveHour} />
+            {result.totalAwards > 0 && <StatCard title="Awards Received" value={result.totalAwards.toLocaleString()} />}
+        </section>
+
+        {result.gildedContent.length > 0 && (
+             <section>
+                <GildedContent items={result.gildedContent} />
+             </section>
         )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <ActivityChart 
-                title="Activity by Hour"
-                data={activityByHour}
-                xAxisKey="hour"
-                showTimezoneToggle={true}
-            />
-            <ActivityChart 
-                title="Activity by Day"
-                data={activityByDay}
-                xAxisKey="day"
-                showTimezoneToggle={false}
-            />
-        </div>
-
-        <div className="mb-8">
-          <YearlyActivityHeatmap data={yearlyActivityHeatmap} />
-        </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <TimeSeriesChart
-                title="Activity Over Time"
-                data={activityOverTime}
-                xAxisKey="date"
+        <section>
+            <YearlyActivityHeatmap data={result.yearlyActivity} />
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <ActivityChart title="Activity by Day of Week (UTC)" data={result.activeDays} xAxisKey="day" showTimezoneToggle={false} />
+            <ActivityChart title="Activity by Hour of Day" data={result.activeHours} xAxisKey="hour" showTimezoneToggle={true} />
+        </div>
+
+        <section>
+             <TimeSeriesChart 
+                title="Activity & Karma Over Time" 
+                data={result.activityByMonth} 
+                xAxisKey="date" 
                 lines={[
                     { dataKey: 'posts', name: 'Posts', color: '#38bdf8' },
-                    { dataKey: 'comments', name: 'Comments', color: '#34d399' }
-                ]}
+                    { dataKey: 'comments', name: 'Comments', color: '#34d399' },
+                    { dataKey: 'postKarma', name: 'Post Karma', color: '#f472b6' },
+                    { dataKey: 'commentKarma', name: 'Comment Karma', color: '#fbbf24' }
+                ]} 
             />
-             <TimeSeriesChart
-                title="Upvote Trends (Avg Score Over Time)"
-                data={scoreOverTime}
-                xAxisKey="date"
-                lines={[
-                    { dataKey: 'avgPostScore', name: 'Avg Post Score', color: '#38bdf8' },
-                    { dataKey: 'avgCommentScore', name: 'Avg Comment Score', color: '#34d399' }
-                ]}
-            />
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <KarmaBreakdownChart postKarma={result.postKarma} commentKarma={result.commentKarma} />
+            <KarmaDistributionChart data={result.topSubredditsByKarma.map(s => ({name: s.name, karma: s.value}))} />
+            <TopSubredditsList title="Most Active Subreddits (by Posts & Comments)" items={result.topSubredditsByActivity} />
+            <SubredditStickinessChart data={result.subredditStickiness} />
         </div>
-        
-        {/* --- Sentiment Analysis Section --- */}
-        <div className="border-t-2 border-sky-800/30 pt-8 mt-8">
-             <h3 className="text-2xl font-bold text-white mb-6 text-center sm:text-left">Sentiment Analysis</h3>
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <SentimentBreakdownChart data={sentimentBreakdown} />
-                <SentimentBySubredditChart data={sentimentBySubreddit} />
+
+        <section>
+            <BestWorstComments best={result.bestComment} worst={result.worstComment} />
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <PostTypeChart data={result.postTypes} />
+            <CommentLengthChart data={result.commentLengthDistribution} />
+        </div>
+
+        <section className="space-y-8">
+            <div className="text-center">
+                 <h3 className="text-2xl font-bold text-white tracking-tight">Sentiment Analysis</h3>
+                 <p className="text-gray-400 mt-1">Analysis of the user's comment sentiment.</p>
             </div>
-             <div className="grid grid-cols-1 gap-8 mb-8">
-                <SentimentHighlights best={mostPositiveComment} worst={mostNegativeComment} />
+            <SentimentHighlights best={result.mostPositiveComment} worst={result.mostNegativeComment} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <SentimentBreakdownChart data={result.sentimentBreakdown} />
+                <SentimentBySubredditChart data={result.sentimentBySubreddit} />
             </div>
-        </div>
+        </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <KarmaDistributionChart data={karmaBySubreddit} />
-            <CommentLengthChart data={commentLengthDistribution} />
-        </div>
+        <section>
+            <VocabularyAnalysis data={result.vocabulary} />
+        </section>
         
-        <div className="grid grid-cols-1 gap-8 mb-8">
-            <BestWorstComments best={bestComment} worst={worstComment} />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-             <SimpleRankedList
-                title="Top Subreddits by Comments"
-                items={topSubredditsByComments.map(item => ({ name: item.name, value: item.count }))}
-                valueLabel="comments"
-             />
-             <SimpleRankedList
-                title="Top Subreddits by Comment Karma"
-                items={topSubredditsByCommentKarma.map(item => ({ name: item.name, value: item.karma }))}
-                valueLabel="karma"
-             />
-             <SimpleRankedList
-                title="Top Subreddits by Post Karma"
-                items={topSubredditsByPostKarma.map(item => ({ name: item.name, value: item.karma }))}
-                valueLabel="karma"
-             />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-             <TopSubredditsList title="Top Subreddits by Activity" items={topSubreddits} />
-             <WordCloud title="Top Words Used" words={topWords} />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-             <KarmaBreakdownChart postKarma={totalPostKarma} commentKarma={totalCommentKarma} />
-             <PostTypeChart data={postTypeDistribution} />
-             <SubredditStickinessChart data={subredditStickiness} />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
-             {totalAwards > 0 ? (
-                <AwardsList title="All Awards Received" items={awards} />
-             ) : (
-                <UserFlairsList title="User Flairs" items={userFlairs} />
-             )}
-             <TopLanguagesList title="Top Languages" items={topLanguages} />
-             {/* Placeholder for potential 3rd item in this row */}
-             {totalAwards > 0 && <UserFlairsList title="User Flairs" items={userFlairs} />}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            { result.achievements.length > 0 && <AchievementsList title="Achievements" items={result.achievements} /> }
+            { result.topAwards.length > 0 && <AwardsList title="Top Awards Received" items={result.topAwards} /> }
+            { result.userFlairs.length > 0 && <UserFlairsList title="Recently Used Flairs" items={result.userFlairs} /> }
+            { result.topMentionedSubreddits.length > 0 && <SimpleRankedList title="Most Mentioned Subreddits" items={result.topMentionedSubreddits} valueLabel="mentions" /> }
         </div>
     </div>
   );

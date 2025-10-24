@@ -2,11 +2,11 @@ import React from 'react';
 
 interface TopSubredditsListProps {
   title: string;
-  items: { name: string; count: number }[];
+  items: { name: string; value: number }[];
 }
 
 const TopSubredditsList: React.FC<TopSubredditsListProps> = ({ title, items }) => {
-  const maxCount = items[0]?.count || 1;
+  const maxCount = items[0]?.value || 1;
   return (
       <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">{title}</h3>
@@ -22,12 +22,12 @@ const TopSubredditsList: React.FC<TopSubredditsListProps> = ({ title, items }) =
                           >
                             r/{item.name}
                           </a>
-                          <span className="font-mono text-gray-400">{item.count.toLocaleString()}</span>
+                          <span className="font-mono text-gray-400">{item.value.toLocaleString()}</span>
                       </div>
                       <div className="w-full bg-gray-700 rounded-full h-1.5">
                           <div
                               className="bg-sky-500 h-1.5 rounded-full"
-                              style={{ width: `${(item.count / maxCount) * 100}%` }}
+                              style={{ width: `${(item.value / maxCount) * 100}%` }}
                           ></div>
                       </div>
                   </li>

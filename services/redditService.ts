@@ -1,4 +1,4 @@
-import type { RedditData, RedditPost, RedditComment } from '../types';
+import type { RedditData, RedditPost, RedditComment, RedditTrophy } from '../types';
 
 const BASE_URL = 'https://www.reddit.com';
 const PROXY_URL = 'https://corsproxy.io/?';
@@ -11,17 +11,14 @@ const apiCache = new Map<string, { timestamp: number; data: RedditData }>();
 async function fetchFromReddit(url: string) {
     const jsonUrl = url.endsWith('.json') ? url : `${url}.json`;
     
-    // Determine the correct separator for the query string
     const separator = jsonUrl.includes('?') ? '&' : '?';
     const redditApiUrl = `${jsonUrl}${separator}raw_json=1`;
 
-    // Prepend the proxy to the final URL to bypass CORS issues
     const finalUrl = `${PROXY_URL}${redditApiUrl}`;
 
     const response = await fetch(finalUrl);
 
     if (!response.ok) {
-        // Try to get a more specific error from Reddit's JSON response body
         try {
             const errorData = await response.json();
             if (errorData.reason === 'private' || errorData.reason === 'banned' || errorData.reason === 'suspended' ) {
@@ -40,8 +37,6 @@ async function fetchFromReddit(url: string) {
         throw new Error(`Reddit API error: ${response.status} ${response.statusText}`);
     }
 
-    // A 200 OK response isn't guaranteed to be valid JSON.
-    // Fetch as text first, then parse manually for better error handling.
     const responseText = await response.text();
     try {
         const data = JSON.parse(responseText);
@@ -86,11 +81,9 @@ async function fetchAllPages(username: string, type: 'comments' | 'submitted') {
             }
         } catch (error) {
             console.error(`Error fetching page ${i + 1} for ${type}:`, error);
-            // If it's a critical error like user not found, stop everything.
             if (error instanceof Error && (error.message.includes('User not found') || error.message.includes('private'))) {
                 throw error;
             }
-            // For other errors (like a single failed page), we can break and proceed with what we have.
             break;
         }
     }
@@ -108,16 +101,18 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
     }
 
     try {
-        // First check if user exists to provide a faster failure message.
         const userAboutUrl = `${BASE_URL}/user/${username}/about`;
-        await fetchFromReddit(userAboutUrl);
+        const trophiesUrl = `${BASE_URL}/user/${username}/trophies`;
 
-        const [commentsData, postsData] = await Promise.all([
+        // Fetch user data, comments, posts, and trophies concurrently
+        const [aboutData, trophiesData, commentsData, postsData] = await Promise.all([
+            fetchFromReddit(userAboutUrl),
+            fetchFromReddit(trophiesUrl),
             fetchAllPages(username, 'comments'),
             fetchAllPages(username, 'submitted')
         ]);
         
-        const comments: RedditComment[] = commentsData
+        const comments: Omit<RedditComment, 'sentiment'>[] = commentsData
             .filter(c => c.kind === 't1' && c.data)
             .map((c: any) => ({
                 id: c.data.id,
@@ -145,10 +140,17 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
                 is_video: p.data.is_video,
                 post_hint: p.data.post_hint,
             }));
+            
+        const trophies: RedditTrophy[] = (trophiesData?.data?.trophies || [])
+            .filter((t: any) => t.kind === 't6' && t.data)
+            .map((t: any) => ({
+                name: t.data.name,
+                icon_url: t.data.icon_70,
+                description: t.data.description,
+            }));
 
-        const result: RedditData = { comments, posts };
+        const result: RedditData = { comments, posts, trophies };
         
-        // --- Set Cache on Success ---
         apiCache.set(lowerCaseUsername, { timestamp: now, data: result });
         console.log(`Fetched and cached new data for u/${username}`);
 
@@ -159,13 +161,12 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
             if (error.message.includes('User not found') || error.message.includes('private')) {
                 throw new Error(`User "u/${username}" was not found or is private.`);
             }
-             if (error.message.includes('Failed to fetch')) { // Browser-level network error
+             if (error.message.includes('Failed to fetch')) {
                 throw new Error('Network error. Please check your connection and try again.');
             }
              if (error.message.includes('Malformed data')) {
                  throw new Error(`Failed to analyze "u/${username}" due to malformed data from Reddit. This can be a temporary issue.`);
             }
-            // Generic fallback for other captured errors
             throw new Error(`Failed to fetch data for "u/${username}". Reddit might be temporarily unavailable.`);
         }
         throw new Error(`An unknown error occurred while fetching data for "u/${username}".`);
