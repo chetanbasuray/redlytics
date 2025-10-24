@@ -1,7 +1,7 @@
 import type { RedditData, RedditPost, RedditComment, RedditTrophy } from '../types';
 
-const BASE_URL = 'https://www.reddit.com';
-const PROXY_URL = 'https://corsproxy.io/?';
+// The base URL of our own application. The proxy is at /api/reddit-proxy
+const PROXY_PATH = '/api/reddit-proxy';
 
 // --- Caching Logic ---
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
@@ -14,43 +14,50 @@ async function fetchFromReddit(url: string) {
     const separator = jsonUrl.includes('?') ? '&' : '?';
     const redditApiUrl = `${jsonUrl}${separator}raw_json=1`;
 
-    const finalUrl = `${PROXY_URL}${redditApiUrl}`;
+    // Construct the URL to our own Edge Function proxy
+    const finalUrl = `${PROXY_PATH}?url=${encodeURIComponent(redditApiUrl)}`;
 
     const response = await fetch(finalUrl);
 
     if (!response.ok) {
+        // Handle errors from our own proxy function (e.g., timeout, internal error)
+        if (response.status >= 500) {
+            throw new Error(`PROXY_ERROR:${response.status}`);
+        }
+        // Handle errors passed through from Reddit's API
+        if (response.status === 404) {
+            throw new Error('REDDIT_ERROR_404');
+        }
+        if (response.status === 403) {
+            throw new Error('REDDIT_ERROR_403');
+        }
+        
+        // Try to parse other errors for more details
         try {
             const errorData = await response.json();
             if (errorData.reason === 'private' || errorData.reason === 'banned' || errorData.reason === 'suspended' ) {
-                 throw new Error('User not found, or their profile is private or banned.');
+                 throw new Error('REDDIT_ERROR_403');
             }
-            if (errorData.message) {
-               throw new Error(`Reddit API error: ${errorData.message}`);
-            }
-        } catch (e) {
-            // Parsing error, fall back to status-based message.
-        }
+        } catch (e) { /* Ignore parsing errors, fall back to generic */ }
+        
+        // Generic fallback for other HTTP errors
+        throw new Error(`PROXY_ERROR:${response.status}`);
+    }
 
-        if (response.status === 404 || response.status === 403) {
-            throw new Error('User not found or their profile is private.');
-        }
-        throw new Error(`Reddit API error: ${response.status} ${response.statusText}`);
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('MALFORMED_DATA: Content-Type is not JSON.');
     }
 
     const responseText = await response.text();
     try {
-        const data = JSON.parse(responseText);
-         if (data.error) {
-            throw new Error(`Reddit API error: ${data.message || data.error}`);
-        }
-        return data;
+        return JSON.parse(responseText);
     } catch (error) {
-        console.error("Failed to parse JSON response from Reddit. This may be a temporary API issue or malformed content in a post/comment.");
-        console.error("Response snippet:", responseText.substring(0, 1000) + '...');
+        console.error("Failed to parse JSON response from Reddit.");
         if (error instanceof Error) {
-            throw new Error(`Malformed data from Reddit: ${error.message}`);
+            throw new Error(`MALFORMED_JSON:${error.message}`);
         }
-        throw new Error('Received malformed data from Reddit. Please try again later.');
+        throw new Error('MALFORMED_JSON: Unknown parsing error.');
     }
 }
 
@@ -59,32 +66,34 @@ async function fetchAllPages(username: string, type: 'comments' | 'submitted') {
     let after: string | null = null;
     const allItems: any[] = [];
     const maxPages = 10; 
+    const baseUrl = `https://www.reddit.com/user/${username}/${type}`;
 
     for (let i = 0; i < maxPages; i++) {
-        let url = `${BASE_URL}/user/${username}/${type}.json?limit=100`;
+        let url = `${baseUrl}.json?limit=100`;
         if (after) {
             url += `&after=${after}`;
         }
         
-        try {
+        // This is the first request for this user. If it fails with a 404, the user doesn't exist.
+        if (i === 0) {
             const data = await fetchFromReddit(url);
-            
-            if (!data?.data?.children?.length) {
-                break; // No more items
-            }
-
+            if (!data?.data?.children?.length) break;
             allItems.push(...data.data.children);
             after = data.data.after;
-
-            if (!after) {
-                break; // Reached the last page
+            if (!after) break;
+        } else {
+            // Subsequent requests might fail for other reasons (e.g., rate limiting),
+            // but we don't want to throw a "user not found" error.
+            try {
+                const data = await fetchFromReddit(url);
+                if (!data?.data?.children?.length) break;
+                allItems.push(...data.data.children);
+                after = data.data.after;
+                if (!after) break;
+            } catch (error) {
+                console.warn(`Stopping pagination for ${type} after page ${i} due to an error.`, error);
+                break; // Stop paginating on any error after the first page.
             }
-        } catch (error) {
-            console.error(`Error fetching page ${i + 1} for ${type}:`, error);
-            if (error instanceof Error && (error.message.includes('User not found') || error.message.includes('private'))) {
-                throw error;
-            }
-            break;
         }
     }
     return allItems;
@@ -101,12 +110,9 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
     }
 
     try {
-        const userAboutUrl = `${BASE_URL}/user/${username}/about`;
-        const trophiesUrl = `${BASE_URL}/user/${username}/trophies`;
+        const trophiesUrl = `https://www.reddit.com/user/${username}/trophies`;
 
-        // Fetch user data, comments, posts, and trophies concurrently
-        const [aboutData, trophiesData, commentsData, postsData] = await Promise.all([
-            fetchFromReddit(userAboutUrl),
+        const [trophiesData, commentsData, postsData] = await Promise.all([
             fetchFromReddit(trophiesUrl),
             fetchAllPages(username, 'comments'),
             fetchAllPages(username, 'submitted')
@@ -156,19 +162,33 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
 
         return result;
     } catch (error) {
-        console.error("Error fetching Reddit data:", error);
+        console.error("Detailed error in fetchRedditData:", error);
+
         if (error instanceof Error) {
-            if (error.message.includes('User not found') || error.message.includes('private')) {
-                throw new Error(`User "u/${username}" was not found or is private.`);
+            // Specific, user-friendly errors
+            if (error.message.startsWith('PROXY_ERROR')) {
+                const status = error.message.split(':')[1];
+                throw new Error(`The analysis service is temporarily unavailable (Error: ${status}). This may be a regional issue with the proxy.`);
             }
-             if (error.message.includes('Failed to fetch')) {
-                throw new Error('Network error. Please check your connection and try again.');
+            if (error.message === 'REDDIT_ERROR_404') {
+                throw new Error(`User "u/${username}" was not found on Reddit.`);
             }
-             if (error.message.includes('Malformed data')) {
+            if (error.message === 'REDDIT_ERROR_403') {
+                throw new Error(`The profile for "u/${username}" is private, suspended, or banned.`);
+            }
+            if (error.message.startsWith('MALFORMED_DATA')) {
                  throw new Error(`Failed to analyze "u/${username}" due to malformed data from Reddit. This can be a temporary issue.`);
             }
-            throw new Error(`Failed to fetch data for "u/${username}". Reddit might be temporarily unavailable.`);
+
+            // Generic browser/network errors
+            if (error.message.toLowerCase().includes('failed to fetch')) {
+                 throw new Error('Network error: Could not connect to the analysis service. Please check your connection and any ad-blockers.');
+            }
+            
+            // Fallback for any other error
+            throw new Error(error.message);
         }
+        
         throw new Error(`An unknown error occurred while fetching data for "u/${username}".`);
     }
 }

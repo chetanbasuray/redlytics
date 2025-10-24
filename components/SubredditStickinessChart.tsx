@@ -62,7 +62,10 @@ const SubredditStickinessChart: React.FC<SubredditStickinessChartProps> = ({ dat
                 <ResponsiveContainer>
                 <PieChart>
                     <Pie
-                    data={data}
+                    // Fix: Re-map data to satisfy recharts' expected data type.
+                    // This resolves a TypeScript error where a named interface without an index signature
+                    // is not assignable to the chart's expected data input type.
+                    data={data.map(item => ({ ...item }))}
                     cx="50%"
                     cy="50%"
                     labelLine={false}

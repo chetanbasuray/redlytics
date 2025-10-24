@@ -1,16 +1,10 @@
-// types.ts
+// --- Raw data from Reddit API ---
 
 export interface RedditAward {
   name: string;
   count: number;
   icon_url: string;
-  [key: string]: any; // Allow other properties from Reddit API
-}
-
-export interface RedditTrophy {
-    name: string;
-    icon_url: string;
-    description: string | null;
+  id: string; // Add id for gilded content uniqueness
 }
 
 export interface RedditComment {
@@ -22,7 +16,7 @@ export interface RedditComment {
   author_flair_text: string | null;
   all_awardings: RedditAward[];
   permalink: string;
-  sentiment: { score: number; comparative: number }; // Added by dataProcessor
+  sentiment: { score: number; comparative: number };
 }
 
 export interface RedditPost {
@@ -39,92 +33,90 @@ export interface RedditPost {
   post_hint?: string;
 }
 
+export interface RedditTrophy {
+  name: string;
+  icon_url: string;
+  description: string | null;
+}
+
+// The shape of data fetched and cached from Reddit.
 export interface RedditData {
   comments: Omit<RedditComment, 'sentiment'>[];
   posts: RedditPost[];
   trophies: RedditTrophy[];
 }
 
-// For charts
-export interface NameValueData {
-  name: string;
-  value: number;
+// --- Processed data for dashboard ---
+
+export interface WordStat {
+  text: string;
+  value: number; // Represents frequency or TF-IDF score
+  sentiment: number;
+  context: string[];
 }
 
 export interface StickinessData {
   category: string;
   value: number;
   subreddits: string[];
-  [key: string]: any;
-}
-
-
-export interface ActivityData {
-  posts: number;
-  comments: number;
-  [key: string]: any; // for xAxisKey
-}
-
-export interface TimeSeriesDataPoint {
-    date: string;
-    posts: number;
-    comments: number;
-    postKarma: number;
-    commentKarma: number;
 }
 
 export interface SentimentBySubreddit {
-    name: string;
-    avgScore: number;
-    count: number;
+  name: string;
+  avgScore: number;
+  count: number;
 }
 
-export interface WordStat {
-    text: string;
-    value: number; // frequency or TF-IDF score
-    sentiment: number;
-    context: string[];
-}
-
-// The main result object
 export interface AnalysisResult {
   username: string;
+
+  // Overview Stats
   totalPosts: number;
   totalComments: number;
-  totalKarma: number;
   postKarma: number;
   commentKarma: number;
   avgPostScore: number;
   avgCommentScore: number;
-  dataSpansDays: number;
-  mostActiveDay: string;
-  mostActiveHour: string;
-  activeHours: ActivityData[];
-  activeDays: ActivityData[];
-  activityByMonth: TimeSeriesDataPoint[];
-  topSubredditsByActivity: NameValueData[];
-  topSubredditsByKarma: NameValueData[];
-  postTypes: NameValueData[];
-  subredditStickiness: StickinessData[];
-  commentLengthDistribution: { name: string; count: number }[];
+  
+  // Activity Analysis
+  activityByHour: { hour: string; posts: number; comments: number }[];
+  activityByDay: { day: string; posts: number; comments: number }[];
+  activityOverTime: { date: string; posts: number; comments: number }[];
+  yearlyActivity: { date: string; count: number }[];
+  
+  // Content Highlights
   bestComment: RedditComment | null;
   worstComment: RedditComment | null;
   mostPositiveComment: RedditComment | null;
   mostNegativeComment: RedditComment | null;
   gildedContent: (RedditPost | RedditComment)[];
-  totalAwards: number;
-  topAwards: RedditAward[];
+  
+  // Community Interaction
+  topSubredditsByActivity: { name: string; value: number }[];
+  topSubredditsByKarma: { name: string; karma: number }[];
+  subredditStickiness: StickinessData[];
   userFlairs: { subreddit: string; text: string }[];
-  achievements: RedditTrophy[];
-  yearlyActivity: { date: string; count: number }[];
-  sentimentBreakdown: NameValueData[];
+  
+  // Post Analysis
+  postTypes: { name: string; value: number }[];
+  
+  // Comment Analysis
+  commentLengthDistribution: { name: string; count: number }[];
+  
+  // Sentiment Analysis
+  sentimentDistribution: { name: string; value: number }[];
   sentimentBySubreddit: SentimentBySubreddit[];
-  topMentionedSubreddits: NameValueData[];
+
+  // Vocabulary Analysis
   vocabulary: {
-      wordCount: number;
-      uniqueWords: number;
-      avgWordLength: number;
-      readability: number; // Flesch-Kincaid Grade Level
-      topWords: WordStat[];
+    wordCount: number;
+    uniqueWords: number;
+    avgWordLength: number;
+    readability: number;
+    topWords: WordStat[];
   };
+  
+  // Awards & Trophies
+  awardsReceived: RedditAward[];
+  trophies: RedditTrophy[];
 }

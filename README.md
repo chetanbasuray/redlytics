@@ -1,5 +1,4 @@
 # Redlytics
-
 A powerful web-based tool for in-depth analysis of public Reddit user activity.
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-redlytics.vercel.app-brightgreen?style=for-the-badge&logo=vercel)](https://redlytics.vercel.app/)
@@ -55,11 +54,11 @@ This project is built with modern, browser-native technologies, requiring no com
 - **Frontend:** [React](https://reactjs.org/) & [TypeScript](https://www.typescriptlang.org/)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) (via CDN)
 - **Charts & Visualizations:** [Recharts](https://recharts.org/)
-- **Language Detection:** [Franc](https://github.com/wooorm/franc)
+- **API Proxy:** [Vercel Edge Functions](https://vercel.com/docs/functions/edge-functions)
 
 ## 🔧 Running Locally
 
-Because this is a static web application with no build step, you can run it locally with any simple web server.
+Because this project uses a Vercel Edge Function for its API proxy, the best way to run it locally is with the Vercel CLI.
 
 1. **Clone the repository:**
 
@@ -73,19 +72,24 @@ Because this is a static web application with no build step, you can run it loca
     cd YOUR_REPOSITORY_NAME
     ```
 
-3. **Serve the files:**
-    The easiest way is to use the `serve` package. If you don't have it, you can run it directly with `npx`.
+3. **Install the Vercel CLI (if you don't have it):**
 
     ```bash
-    npx serve .
+    npm install -g vercel
     ```
 
-4. Open your browser and go to the local address provided (usually `http://localhost:3000`).
+4. **Run the local development server:**
+
+    ```bash
+    vercel dev
+    ```
+
+5. Open your browser and go to the local address provided (usually `http://localhost:3000`). The server will automatically run the Edge Function, allowing the application to work just like it does in production.
 
 ## 💡 How It Works
 
-1. **Data Fetching:** When a username is submitted, the application makes requests to the public, unauthenticated Reddit JSON API.
-2. **CORS Proxy:** To bypass browser CORS (Cross-Origin Resource Sharing) restrictions, all API calls are routed through `corsproxy.io`.
+1. **Data Fetching:** When a username is submitted, the application makes requests to its own internal API endpoint (`/api/reddit-proxy`).
+2. **Vercel Edge Proxy:** This endpoint is a Vercel Edge Function that runs on Vercel's global network, close to the user. This function receives the request, securely fetches the data from the public Reddit API, and streams it back to the browser with the correct CORS headers. This ensures fast and reliable data fetching from anywhere in the world.
 3. **Client-Side Analysis:** Up to 1000 posts and 1000 comments are fetched. All data processing and analysis happens directly in your browser using JavaScript.
 4. **Caching:** To improve performance and reduce API load, results for a specific user are cached in-memory for 5 minutes. Analyzing the same user within this window will load the data instantly.
 5. **Rendering:** The analysis results are passed to React components which use the Recharts library to render the interactive dashboard.
