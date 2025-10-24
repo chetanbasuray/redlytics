@@ -69,7 +69,24 @@ function App() {
               <span className="block sm:inline">{error}</span>
             </div>
           )}
-          {analysisResult && <Dashboard result={analysisResult} />}
+          {analysisResult && (
+            <>
+              <div className="mb-8 text-center">
+                <h2 className="text-3xl font-bold text-white tracking-tight">
+                  Analysis for{' '}
+                  <a
+                    href={`https://www.reddit.com/user/${analysisResult.username}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sky-400 hover:underline transition-colors"
+                  >
+                    u/{analysisResult.username}
+                  </a>
+                </h2>
+              </div>
+              <Dashboard result={analysisResult} />
+            </>
+          )}
         </section>
       </main>
       <footer className="text-center text-gray-500 mt-16 py-8 border-t border-gray-800 text-sm">
