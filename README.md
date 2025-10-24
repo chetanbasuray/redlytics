@@ -1,17 +1,6 @@
-<br/>
-<p align="center">
-  <a href="https://redlytics.vercel.app/">
-    <img src="https://i.imgur.com/gY97k85.png" alt="Redlytics Logo" width="80" height="80">
-  </a>
-  <h1 align="center">Redlytics</h1>
-  <p align="center">
-    A powerful web-based tool for in-depth analysis of public Reddit user activity.
-    <br />
-    [**View Live Demo »**](https://redlytics.vercel.app/)
-    <br />
-    <br />
-  </p>
-</p>
+# Redlytics
+
+A powerful web-based tool for in-depth analysis of public Reddit user activity.
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-redlytics.vercel.app-brightgreen?style=for-the-badge&logo=vercel)](https://redlytics.vercel.app/)
 [![Support Project](https://img.shields.io/badge/Support-Buy%20Me%20a%20Coffee-orange?style=for-the-badge&logo=buy-me-a-coffee)](https://www.buymeacoffee.com/donatetochetan)
