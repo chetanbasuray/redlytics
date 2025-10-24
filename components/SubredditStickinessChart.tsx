@@ -6,7 +6,7 @@ interface SubredditStickinessChartProps {
 }
 
 const SubredditStickinessChart: React.FC<SubredditStickinessChartProps> = ({ data }) => {
-  const COLORS = ['#818cf8', '#da35ccff'];
+  const COLORS = ['#818cf8', '#4b5563'];
   const totalActivity = data.reduce((sum, entry) => sum + entry.value, 0);
 
   if (totalActivity === 0) {
@@ -23,7 +23,7 @@ const SubredditStickinessChart: React.FC<SubredditStickinessChartProps> = ({ dat
       const data = payload[0];
       const percentage = totalActivity > 0 ? ((data.value / totalActivity) * 100).toFixed(1) : 0;
       return (
-        <div className="bg-gray-700 p-3 border border-gray-600 rounded-md shadow-lg text-sm">
+        <div className="bg-black/80 backdrop-blur-sm p-3 border border-gray-600 rounded-md shadow-lg text-sm">
           <p className="font-bold" style={{ color: data.payload.fill }}>{`${data.name}`}</p>
           <p className="text-gray-200 mt-1">{`${data.value.toLocaleString()} actions (${percentage}%)`}</p>
         </div>

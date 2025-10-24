@@ -1,0 +1,18 @@
+import React from 'react';
+
+const LogoIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg
+    role="img"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
+    <title>Redlytics</title>
+    <path
+      d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zM8 16H6v-5h2v5zm4 0h-2V7h2v9zm4 0h-2v-3h2v3z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+export default LogoIcon;

@@ -5,6 +5,7 @@ import type { AnalysisResult } from './types';
 import UserInput from './components/UserInput';
 import Dashboard from './components/Dashboard';
 import Loader from './components/Loader';
+import LogoIcon from './components/LogoIcon';
 
 function App() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -42,18 +43,12 @@ function App() {
     }
   }, []);
   
-  const Logo = () => (
-    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mr-2 text-sky-500">
-        <title>Redlytics</title>
-        <path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zM8 16H6v-5h2v5zm4 0h-2V7h2v9zm4 0h-2v-3h2v3z" fill="currentColor" />
-    </svg>
-  );
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200 font-sans p-4 sm:p-6 lg:p-8">
       <main className="max-w-7xl mx-auto">
         <header className="flex items-center justify-center sm:justify-start mb-6">
-          <Logo />
+          <LogoIcon className="h-8 w-8 mr-2 text-sky-500" />
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Redlytics
           </h1>

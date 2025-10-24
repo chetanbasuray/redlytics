@@ -23,7 +23,7 @@ const PostTypeChart: React.FC<PostTypeChartProps> = ({ data }) => {
       const data = payload[0];
       const percentage = totalPosts > 0 ? ((data.value / totalPosts) * 100).toFixed(1) : 0;
       return (
-        <div className="bg-gray-700 p-3 border border-gray-600 rounded-md shadow-lg text-sm">
+        <div className="bg-black/80 backdrop-blur-sm p-3 border border-gray-600 rounded-md shadow-lg text-sm">
           <p className="font-bold" style={{ color: data.payload.fill }}>{`${data.name}`}</p>
           <p className="text-gray-200 mt-1">{`${data.value.toLocaleString()} posts (${percentage}%)`}</p>
         </div>

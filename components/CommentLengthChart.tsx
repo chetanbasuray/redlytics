@@ -5,6 +5,24 @@ interface CommentLengthChartProps {
   data: { name: string; count: number }[];
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-black/80 backdrop-blur-sm p-3 border border-gray-600 rounded-md shadow-lg text-sm">
+          <p className="font-bold text-gray-200 mb-2">{label}</p>
+           <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: '#a78bfa' }}></div>
+                  <span className="text-gray-300">Comments:</span>
+              </div>
+              <span className="font-semibold text-white">{payload[0].value.toLocaleString()}</span>
+          </div>
+        </div>
+      );
+    }
+    return null;
+};
+
 const CommentLengthChart: React.FC<CommentLengthChartProps> = ({ data }) => {
   return (
     <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-700">
@@ -27,15 +45,8 @@ const CommentLengthChart: React.FC<CommentLengthChartProps> = ({ data }) => {
              />
             <YAxis stroke="#A0AEC0" tick={{ fill: '#A0AEC0', fontSize: 12 }} allowDecimals={false} />
             <Tooltip
-              contentStyle={{
-                backgroundColor: '#1A202C',
-                borderColor: '#4A5568',
-                color: '#E2E8F0',
-                borderRadius: '0.5rem',
-              }}
+              content={<CustomTooltip />}
               cursor={{ fill: 'rgba(147, 197, 253, 0.1)' }}
-              formatter={(value: number) => [value.toLocaleString(), 'Comments']}
-              labelFormatter={(label) => `Length: ${label} chars`}
             />
             <Bar dataKey="count" fill="#a78bfa" name="Comments" radius={[4, 4, 0, 0]} />
           </BarChart>

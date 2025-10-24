@@ -12,6 +12,27 @@ interface TimeSeriesChartProps {
   }[];
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const formattedLabel = new Date(label + 'T00:00:00').toLocaleDateString('en-US', { dateStyle: 'medium'});
+      return (
+        <div className="bg-black/80 backdrop-blur-sm p-3 border border-gray-600 rounded-md shadow-lg text-sm">
+          <p className="font-bold text-gray-200 mb-2">{formattedLabel}</p>
+          {payload.map((pld: any) => (
+             <div key={pld.dataKey} className="flex items-center justify-between gap-4">
+                <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: pld.color }}></div>
+                    <span className="text-gray-300">{pld.name}:</span>
+                </div>
+                <span className="font-semibold text-white">{pld.value.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+};
+
 const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({ title, data, xAxisKey, lines }) => {
     const initialVisibility = lines.reduce((acc, line) => {
         acc[line.dataKey] = true;
@@ -46,13 +67,8 @@ const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({ title, data, xAxisKey
             />
             <YAxis stroke="#A0AEC0" tick={{ fill: '#A0AEC0', fontSize: 12 }} />
             <Tooltip
-              contentStyle={{
-                backgroundColor: '#1A202C',
-                borderColor: '#4A5568',
-                color: '#E2E8F0',
-                borderRadius: '0.5rem',
-              }}
-              labelFormatter={(label) => new Date(label + 'T00:00:00').toLocaleDateString('en-US', { dateStyle: 'medium'})}
+              content={<CustomTooltip />}
+              cursor={{ stroke: '#a0aec0', strokeDasharray: '3 3' }}
             />
             <Legend 
               onClick={(e) => toggleVisibility(e.dataKey as string)}

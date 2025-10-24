@@ -5,6 +5,25 @@ interface KarmaDistributionChartProps {
   data: { name: string; karma: number }[];
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-black/80 backdrop-blur-sm p-3 border border-gray-600 rounded-md shadow-lg text-sm">
+          <p className="font-bold text-gray-200 mb-2">{`r/${label}`}</p>
+          <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: '#a78bfa' }}></div>
+                  <span className="text-gray-300">Karma:</span>
+              </div>
+              <span className="font-semibold text-white">{payload[0].value.toLocaleString()}</span>
+          </div>
+        </div>
+      );
+    }
+    return null;
+};
+
+
 const KarmaDistributionChart: React.FC<KarmaDistributionChartProps> = ({ data }) => {
   
   // Formats large numbers for better readability on the axis and tooltip
@@ -46,13 +65,8 @@ const KarmaDistributionChart: React.FC<KarmaDistributionChartProps> = ({ data })
                 tickFormatter={(value) => `r/${value}`}
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: '#1A202C',
-                borderColor: '#4A5568',
-                color: '#E2E8F0',
-              }}
+              content={<CustomTooltip />}
               cursor={{ fill: 'rgba(147, 197, 253, 0.1)' }}
-              formatter={(value: number) => [value.toLocaleString(), 'Karma']}
             />
             <Bar dataKey="karma" fill="url(#karmaBarGradient)" name="Karma" radius={[0, 4, 4, 0]} barSize={20} />
           </BarChart>
