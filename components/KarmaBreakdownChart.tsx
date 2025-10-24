@@ -30,8 +30,8 @@ const KarmaBreakdownChart: React.FC<KarmaBreakdownChartProps> = ({ postKarma, co
       const percentage = totalKarma > 0 ? ((data.value / totalKarma) * 100).toFixed(1) : 0;
       return (
         <div className="bg-gray-700 p-3 border border-gray-600 rounded-md shadow-lg text-sm">
-          <p className="font-bold" style={{ color: data.payload.fill }}>{`${data.name}`}</p>
-          <p className="text-gray-200 mt-1">{`${data.value.toLocaleString()} karma (${percentage}%)`}</p>
+        <p className="font-bold" style={{ color: data.payload.fill }}>{`${data.name}`}</p>
+        <p className="text-gray-200 mt-1">{`${data.value.toLocaleString()} karma (${percentage}%)`}</p>
         </div>
       );
     }
@@ -75,7 +75,7 @@ const KarmaBreakdownChart: React.FC<KarmaBreakdownChartProps> = ({ postKarma, co
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(147, 197, 253, 0.1)' }}/>
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(147, 197, 253, 0.1)' }} />
             <Legend iconType="circle" wrapperStyle={{fontSize: "14px", paddingTop: "20px"}} />
           </PieChart>
         </ResponsiveContainer>

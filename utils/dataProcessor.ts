@@ -1,10 +1,10 @@
-import type { RedditData, AnalysisResult, RedditAward, RedditComment } from '../types';
+import type { RedditData, AnalysisResult, RedditAward, RedditComment, RedditPost } from '../types';
 import { franc } from 'franc';
 import { getLanguageInfo } from './languageUtils';
 
 
 const STOP_WORDS = new Set([
-  'i', 'k', 'ta', 'us', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours', 
+  'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours', 
   'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 
   'herself', 'it', 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 
   'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'is', 'are', 
@@ -15,8 +15,10 @@ const STOP_WORDS = new Set([
   'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 
   'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 
   'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 
-  'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now', 've', 'll', 'r'
+  'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 'should', 'now', 've', 'll'
 ]);
+
+const PREMIUM_AWARDS = new Set(['Gold Award', 'Platinum Award', 'Ternion All-Powerful Award', 'Argentium Award']);
 
 
 export function analyzeData(data: RedditData, username: string): AnalysisResult {
@@ -83,10 +85,21 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
     acc[item.subreddit] = (acc[item.subreddit] || 0) + 1;
     return acc;
   }, {});
-  const topSubreddits = Object.entries(subredditCounts)
-    .sort(([, a], [, b]) => b - a)
+  const sortedSubreddits = Object.entries(subredditCounts)
+    .sort(([, a], [, b]) => b - a);
+
+  const topSubreddits = sortedSubreddits
     .slice(0, 10)
     .map(([name, count]) => ({ name, count }));
+
+  // Subreddit Stickiness
+  const top3Count = sortedSubreddits.slice(0, 3).reduce((sum, [, count]) => sum + count, 0);
+  const totalActivity = allItems.length;
+  const subredditStickiness = totalActivity > 0 ? [
+      { name: 'Top 3 Subreddits', value: top3Count },
+      { name: 'Other', value: totalActivity - top3Count },
+  ] : [];
+
 
   // Karma by Subreddit
   const subredditKarma = allItems.reduce<Record<string, number>>((acc, item) => {
@@ -109,10 +122,12 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
   
   // Award Analysis
   const awardCounts: Record<string, { name: string; count: number; icon_url: string }> = {};
+  const gildedContent: (RedditPost | RedditComment)[] = [];
   let totalAwards = 0;
 
   allItems.forEach(item => {
       if (item.all_awardings) {
+          let hasPremiumAward = false;
           item.all_awardings.forEach(award => {
               totalAwards += award.count;
               if (awardCounts[award.name]) {
@@ -124,7 +139,13 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
                       icon_url: award.icon_url,
                   };
               }
+              if (PREMIUM_AWARDS.has(award.name)) {
+                  hasPremiumAward = true;
+              }
           });
+          if (hasPremiumAward) {
+              gildedContent.push(item);
+          }
       }
   });
   const awards = Object.values(awardCounts).sort((a, b) => b.count - a.count);
@@ -175,11 +196,7 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
 
   // Comment Length Distribution
   const lengthBuckets = {
-    '1-20': 0,      // Tiny
-    '21-100': 0,    // Short
-    '101-300': 0,   // Medium
-    '301-1000': 0,  // Long
-    '1001+': 0,     // Very Long
+    '1-20': 0, '21-100': 0, '101-300': 0, '301-1000': 0, '1001+': 0,
   };
   comments.forEach(comment => {
       const len = comment.body.length;
@@ -196,6 +213,19 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
       { name: 'Long (301-1000)', count: lengthBuckets['301-1000'] },
       { name: 'Very Long (1001+)', count: lengthBuckets['1001+'] },
   ];
+  
+    // Post Type Distribution
+    const postTypes = { 'Text': 0, 'Link': 0, 'Image': 0, 'Video': 0, 'Other': 0 };
+    posts.forEach(post => {
+        if (post.is_video || post.post_hint === 'hosted:video' || post.post_hint === 'rich:video') postTypes['Video']++;
+        else if (post.post_hint === 'image') postTypes['Image']++;
+        else if (post.is_self) postTypes['Text']++;
+        else if (post.post_hint === 'link') postTypes['Link']++;
+        else postTypes['Other']++;
+    });
+    const postTypeDistribution = Object.entries(postTypes)
+        .map(([name, value]) => ({ name, value }))
+        .filter(item => item.value > 0);
 
 
   // Time Series Analysis
@@ -265,5 +295,8 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
     worstComment,
     totalAwards,
     awards,
+    postTypeDistribution,
+    subredditStickiness,
+    gildedContent,
   };
 }

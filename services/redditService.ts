@@ -141,6 +141,9 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
                 created_utc: p.data.created_utc,
                 author_flair_text: p.data.author_flair_text,
                 all_awardings: p.data.all_awardings || [],
+                is_self: p.data.is_self,
+                is_video: p.data.is_video,
+                post_hint: p.data.post_hint,
             }));
 
         const result: RedditData = { comments, posts };

@@ -2,7 +2,6 @@ import React from 'react';
 import type { AnalysisResult } from '../types';
 import StatCard from './StatCard';
 import ActivityChart from './ActivityChart';
-import TopItemsList from './TopItemsList';
 import KarmaBreakdownChart from './KarmaBreakdownChart';
 import TopLanguagesList from './TopLanguagesList';
 import UserFlairsList from './UserFlairsList';
@@ -12,6 +11,10 @@ import BestWorstComments from './BestWorstComments';
 import AwardsList from './AwardsList';
 import CommentLengthChart from './CommentLengthChart';
 import WordCloud from './WordCloud';
+import GildedContent from './GildedContent';
+import PostTypeChart from './PostTypeChart';
+import SubredditStickinessChart from './SubredditStickinessChart';
+import TopSubredditsList from './TopSubredditsList';
 
 
 interface DashboardProps {
@@ -45,6 +48,9 @@ const Dashboard: React.FC<DashboardProps> = ({ result }) => {
     worstComment,
     totalAwards,
     awards,
+    postTypeDistribution,
+    subredditStickiness,
+    gildedContent,
   } = result;
 
   return (
@@ -55,21 +61,22 @@ const Dashboard: React.FC<DashboardProps> = ({ result }) => {
         </div>
         
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 mb-8">
-            {/* Activity Stats */}
             <StatCard title="Total Posts" value={totalPosts.toLocaleString()} />
             <StatCard title="Total Comments" value={totalComments.toLocaleString()} />
             <StatCard title="Est. Age (Days)" value={accountAgeDays.toLocaleString()} />
-
-            {/* Karma Stats */}
             <StatCard title="Total Karma" value={totalKarma.toLocaleString()} />
             <StatCard title="Avg Post Karma" value={avgPostKarma.toLocaleString()} />
             <StatCard title="Avg Comment Karma" value={avgCommentKarma.toLocaleString()} />
-            
-            {/* Engagement Stats */}
             {totalAwards > 0 && <StatCard title="Awards Received" value={totalAwards.toLocaleString()} />}
             <StatCard title="Most Active" value={mostActiveHour} />
             <StatCard title="Least Active" value={leastActiveHour} />
         </div>
+        
+        {gildedContent.length > 0 && (
+            <div className="mb-8">
+                <GildedContent items={gildedContent} />
+            </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <ActivityChart 
@@ -123,49 +130,22 @@ const Dashboard: React.FC<DashboardProps> = ({ result }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
              <KarmaBreakdownChart postKarma={totalPostKarma} commentKarma={totalCommentKarma} />
+             <PostTypeChart data={postTypeDistribution} />
+             <SubredditStickinessChart data={subredditStickiness} />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
              {totalAwards > 0 ? (
-                <AwardsList title="Awards Received" items={awards} />
+                <AwardsList title="All Awards Received" items={awards} />
              ) : (
                 <UserFlairsList title="User Flairs" items={userFlairs} />
              )}
              <TopLanguagesList title="Top Languages" items={topLanguages} />
+             {/* Placeholder for potential 3rd item in this row */}
+             {totalAwards > 0 && <UserFlairsList title="User Flairs" items={userFlairs} />}
         </div>
     </div>
   );
 };
-
-
-// A new component for TopSubredditsList to add link to subreddit
-const TopSubredditsList: React.FC<{title: string, items: {name: string, count: number}[]}> = ({ title, items }) => {
-  const maxCount = items[0]?.count || 1;
-  return (
-      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-4">{title}</h3>
-          <ul className="space-y-3">
-              {items.map((item, index) => (
-                  <li key={index} className="text-sm">
-                      <div className="flex justify-between items-center mb-1">
-                          <a 
-                            href={`https://www.reddit.com/r/${item.name}`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-gray-300 truncate hover:text-sky-400 transition-colors"
-                          >
-                            r/{item.name}
-                          </a>
-                          <span className="font-mono text-gray-400">{item.count.toLocaleString()}</span>
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-1.5">
-                          <div
-                              className="bg-sky-500 h-1.5 rounded-full"
-                              style={{ width: `${(item.count / maxCount) * 100}%` }}
-                          ></div>
-                      </div>
-                  </li>
-              ))}
-          </ul>
-      </div>
-  );
-}
 
 export default Dashboard;

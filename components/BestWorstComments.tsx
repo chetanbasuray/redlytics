@@ -38,7 +38,10 @@ const CommentCard: React.FC<{ comment: RedditComment | null; type: 'Best' | 'Wor
                 {isBest ? <ThumbsUpIcon /> : <ThumbsDownIcon />}
                 <h4 className={`font-semibold text-lg ${headerColor}`}>{type} Comment</h4>
             </div>
-            <blockquote className="text-gray-300 text-sm italic border-l-2 border-gray-700 pl-3 mb-4 flex-grow">
+            <blockquote
+              className="text-gray-300 text-sm italic border-l-2 border-gray-700 pl-3 mb-4 flex-grow"
+              title={comment.body}
+            >
                 {comment.body.length > 200 ? `${comment.body.substring(0, 200)}...` : comment.body}
             </blockquote>
             <div className="text-xs text-gray-400 flex justify-between items-center mt-auto pt-2 border-t border-gray-700/50">

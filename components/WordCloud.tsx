@@ -47,13 +47,13 @@ const WordCloud: React.FC<WordCloudProps> = ({ title, words }) => {
     return Math.round(size);
   };
   
-  // Create a color hierarchy
+  // Create a color hierarchy for better readability
   const getColor = (value: number, rank: number) => {
       if (rank < 3) return 'text-sky-400'; // Top 3 words
       if (rank < 8) return 'text-sky-300'; // Next 5
       const ratio = (value - minValue) / (maxValue - minValue);
       if (ratio > 0.5) return 'text-gray-200';
-      return 'text-gray-400';
+      return 'text-gray-300'; // Formerly gray-400, increased contrast
   }
 
   return (

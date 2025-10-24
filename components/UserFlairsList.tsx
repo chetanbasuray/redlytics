@@ -18,13 +18,12 @@ const UserFlairsList: React.FC<UserFlairsListProps> = ({ title, items }) => {
   return (
     <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-700 h-full">
       <h3 className="text-lg font-semibold text-white mb-4">{title}</h3>
-      <ul className="space-y-3">
+      <ul className="space-y-4">
         {items.map((item, index) => (
-          <li key={index} className="text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-            <div className="truncate flex-shrink mr-2">
+          <li key={index} className="text-sm flex flex-col sm:flex-row sm:justify-between gap-2">
+            <div className="flex-shrink mr-2">
               <span 
-                className="font-semibold text-white bg-gray-700/60 px-2 py-1 rounded-md"
-                title={item.text}
+                className="font-semibold text-white bg-gray-700/60 px-2 py-1 rounded-md inline-block"
               >
                 {item.text}
               </span>

@@ -24,6 +24,9 @@ export interface RedditPost {
   created_utc: number;
   author_flair_text?: string | null;
   all_awardings?: RedditAward[];
+  is_self?: boolean;
+  is_video?: boolean;
+  post_hint?: string;
 }
 
 export interface RedditData {
@@ -57,4 +60,7 @@ export interface AnalysisResult {
   worstComment: RedditComment | null;
   totalAwards: number;
   awards: { name: string; count: number; icon_url: string }[];
+  postTypeDistribution: { name: string; value: number }[];
+  subredditStickiness: { name: string; value: number }[];
+  gildedContent: (RedditPost | RedditComment)[];
 }
