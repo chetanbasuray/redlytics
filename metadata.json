@@ -1,0 +1,5 @@
+{
+  "name": "Redlytics",
+  "description": "Redlytics: A web tool that grabs a Reddit user's most recent posts/comments and generates summary statistics, visualizations of posting behavior, top words, subreddits frequented, and other analytics.",
+  "requestFramePermissions": []
+}
