@@ -15,6 +15,11 @@ import GildedContent from './GildedContent';
 import PostTypeChart from './PostTypeChart';
 import SubredditStickinessChart from './SubredditStickinessChart';
 import TopSubredditsList from './TopSubredditsList';
+import SimpleRankedList from './SimpleRankedList';
+import YearlyActivityHeatmap from './YearlyActivityHeatmap';
+import SentimentBreakdownChart from './SentimentBreakdownChart';
+import SentimentBySubredditChart from './SentimentBySubredditChart';
+import SentimentHighlights from './SentimentHighlights';
 
 
 interface DashboardProps {
@@ -51,6 +56,14 @@ const Dashboard: React.FC<DashboardProps> = ({ result }) => {
     postTypeDistribution,
     subredditStickiness,
     gildedContent,
+    topSubredditsByComments,
+    topSubredditsByCommentKarma,
+    topSubredditsByPostKarma,
+    yearlyActivityHeatmap,
+    sentimentBreakdown,
+    sentimentBySubreddit,
+    mostPositiveComment,
+    mostNegativeComment,
   } = result;
 
   return (
@@ -92,6 +105,10 @@ const Dashboard: React.FC<DashboardProps> = ({ result }) => {
                 showTimezoneToggle={false}
             />
         </div>
+
+        <div className="mb-8">
+          <YearlyActivityHeatmap data={yearlyActivityHeatmap} />
+        </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <TimeSeriesChart
@@ -113,6 +130,18 @@ const Dashboard: React.FC<DashboardProps> = ({ result }) => {
                 ]}
             />
         </div>
+        
+        {/* --- Sentiment Analysis Section --- */}
+        <div className="border-t-2 border-sky-800/30 pt-8 mt-8">
+             <h3 className="text-2xl font-bold text-white mb-6 text-center sm:text-left">Sentiment Analysis</h3>
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <SentimentBreakdownChart data={sentimentBreakdown} />
+                <SentimentBySubredditChart data={sentimentBySubreddit} />
+            </div>
+             <div className="grid grid-cols-1 gap-8 mb-8">
+                <SentimentHighlights best={mostPositiveComment} worst={mostNegativeComment} />
+            </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <KarmaDistributionChart data={karmaBySubreddit} />
@@ -121,6 +150,24 @@ const Dashboard: React.FC<DashboardProps> = ({ result }) => {
         
         <div className="grid grid-cols-1 gap-8 mb-8">
             <BestWorstComments best={bestComment} worst={worstComment} />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+             <SimpleRankedList
+                title="Top Subreddits by Comments"
+                items={topSubredditsByComments.map(item => ({ name: item.name, value: item.count }))}
+                valueLabel="comments"
+             />
+             <SimpleRankedList
+                title="Top Subreddits by Comment Karma"
+                items={topSubredditsByCommentKarma.map(item => ({ name: item.name, value: item.karma }))}
+                valueLabel="karma"
+             />
+             <SimpleRankedList
+                title="Top Subreddits by Post Karma"
+                items={topSubredditsByPostKarma.map(item => ({ name: item.name, value: item.karma }))}
+                valueLabel="karma"
+             />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">

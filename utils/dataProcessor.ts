@@ -1,6 +1,7 @@
 import type { RedditData, AnalysisResult, RedditAward, RedditComment, RedditPost } from '../types';
 import { franc } from 'franc';
 import { getLanguageInfo } from './languageUtils';
+import { getSentiment } from './sentimentAnalyzer';
 
 
 const STOP_WORDS = new Set([
@@ -22,7 +23,14 @@ const PREMIUM_AWARDS = new Set(['Gold Award', 'Platinum Award', 'Ternion All-Pow
 
 
 export function analyzeData(data: RedditData, username: string): AnalysisResult {
-  const { posts, comments } = data;
+  const { posts, comments: rawComments } = data;
+  
+  // --- Pre-process comments with sentiment ---
+  const comments = rawComments.map(comment => ({
+      ...comment,
+      sentiment: getSentiment(comment.body),
+  }));
+
   const allItems = [...posts, ...comments];
 
   // Basic Stats
@@ -91,6 +99,36 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
   const topSubreddits = sortedSubreddits
     .slice(0, 10)
     .map(([name, count]) => ({ name, count }));
+    
+  // Top Subreddits by Comments
+  const subredditCommentCounts = comments.reduce<Record<string, number>>((acc, item) => {
+    acc[item.subreddit] = (acc[item.subreddit] || 0) + 1;
+    return acc;
+  }, {});
+  const topSubredditsByComments = Object.entries(subredditCommentCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([name, count]) => ({ name, count }));
+
+  // Top Subreddits by Comment Karma
+  const subredditCommentKarma = comments.reduce<Record<string, number>>((acc, item) => {
+    acc[item.subreddit] = (acc[item.subreddit] || 0) + item.score;
+    return acc;
+  }, {});
+  const topSubredditsByCommentKarma = Object.entries(subredditCommentKarma)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([name, karma]) => ({ name, karma }));
+    
+  // Top Subreddits by Post Karma
+  const subredditPostKarma = posts.reduce<Record<string, number>>((acc, item) => {
+    acc[item.subreddit] = (acc[item.subreddit] || 0) + item.score;
+    return acc;
+  }, {});
+  const topSubredditsByPostKarma = Object.entries(subredditPostKarma)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([name, karma]) => ({ name, karma }));
 
   // Subreddit Stickiness
   const top3Count = sortedSubreddits.slice(0, 3).reduce((sum, [, count]) => sum + count, 0);
@@ -111,7 +149,7 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
       .slice(0, 10)
       .map(([name, karma]) => ({ name, karma }));
 
-  // Best/Worst Comments
+  // Best/Worst Comments by Karma
   let bestComment: RedditComment | null = null;
   let worstComment: RedditComment | null = null;
   if (comments.length > 0) {
@@ -120,6 +158,43 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
     worstComment = sortedComments[sortedComments.length - 1];
   }
   
+  // --- Sentiment Analysis ---
+  const sentimentCounts = { positive: 0, negative: 0, neutral: 0 };
+  const sentimentBySubredditRaw: Record<string, { sum: number; count: number }> = {};
+  
+  comments.forEach(comment => {
+    const { score } = comment.sentiment;
+    if (score > 0.5) sentimentCounts.positive++;
+    else if (score < -0.5) sentimentCounts.negative++;
+    else sentimentCounts.neutral++;
+
+    if (!sentimentBySubredditRaw[comment.subreddit]) {
+        sentimentBySubredditRaw[comment.subreddit] = { sum: 0, count: 0 };
+    }
+    sentimentBySubredditRaw[comment.subreddit].sum += score;
+    sentimentBySubredditRaw[comment.subreddit].count++;
+  });
+
+  const sentimentBreakdown = [
+      { name: 'Positive', value: sentimentCounts.positive },
+      { name: 'Neutral', value: sentimentCounts.neutral },
+      { name: 'Negative', value: sentimentCounts.negative },
+  ];
+  
+  const sentimentBySubreddit = Object.entries(sentimentBySubredditRaw)
+    .map(([name, data]) => ({ name, avgScore: data.count > 0 ? data.sum / data.count : 0, count: data.count }))
+    .filter(item => item.count >= 5) // Only include subreddits with enough comments
+    .sort((a, b) => b.avgScore - a.avgScore)
+    .slice(0, 10);
+  
+  let mostPositiveComment: RedditComment | null = null;
+  let mostNegativeComment: RedditComment | null = null;
+  if (comments.length > 0) {
+      const sortedBySentiment = [...comments].sort((a, b) => b.sentiment.score - a.sentiment.score);
+      mostPositiveComment = sortedBySentiment[0];
+      mostNegativeComment = sortedBySentiment[sortedBySentiment.length - 1];
+  }
+
   // Award Analysis
   const awardCounts: Record<string, { name: string; count: number; icon_url: string }> = {};
   const gildedContent: (RedditPost | RedditComment)[] = [];
@@ -237,8 +312,8 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
     const newestDate = new Date(sortedItems[sortedItems.length - 1].created_utc * 1000);
     const startDate = new Date(oldestDate.getFullYear(), oldestDate.getMonth(), oldestDate.getDate());
     const endDate = new Date(newestDate.getFullYear(), newestDate.getMonth(), newestDate.getDate());
-    const activityMap = new Map();
-    const scoreMap = new Map();
+    const activityMap: Map<string, { posts: number; comments: number }> = new Map();
+    const scoreMap: Map<string, { postScoreSum: number; postCount: number; commentScoreSum: number; commentCount: number }> = new Map();
     const toDateString = (d: Date) => d.toISOString().split('T')[0];
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
         const dateStr = toDateString(d);
@@ -248,17 +323,17 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
     posts.forEach(post => {
         const dateStr = toDateString(new Date(post.created_utc * 1000));
         if (activityMap.has(dateStr)) {
-            activityMap.get(dateStr).posts++;
-            scoreMap.get(dateStr).postScoreSum += post.score;
-            scoreMap.get(dateStr).postCount++;
+            activityMap.get(dateStr)!.posts++;
+            scoreMap.get(dateStr)!.postScoreSum += post.score;
+            scoreMap.get(dateStr)!.postCount++;
         }
     });
     comments.forEach(comment => {
         const dateStr = toDateString(new Date(comment.created_utc * 1000));
         if (activityMap.has(dateStr)) {
-            activityMap.get(dateStr).comments++;
-            scoreMap.get(dateStr).commentScoreSum += comment.score;
-            scoreMap.get(dateStr).commentCount++;
+            activityMap.get(dateStr)!.comments++;
+            scoreMap.get(dateStr)!.commentScoreSum += comment.score;
+            scoreMap.get(dateStr)!.commentCount++;
         }
     });
     activityOverTime = Array.from(activityMap, ([date, data]) => ({ date, ...data }));
@@ -268,6 +343,23 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
         avgCommentScore: data.commentCount > 0 ? Math.round(data.commentScoreSum / data.commentCount) : 0,
     }));
   }
+
+  // Yearly Activity Heatmap
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  const oneYearAgoTimestamp = oneYearAgo.getTime() / 1000;
+
+  const activityByDate = new Map<string, number>();
+  
+  allItems.forEach(item => {
+      if (item.created_utc >= oneYearAgoTimestamp) {
+          const date = new Date(item.created_utc * 1000);
+          const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD
+          activityByDate.set(dateString, (activityByDate.get(dateString) || 0) + 1);
+      }
+  });
+  
+  const yearlyActivityHeatmap = Array.from(activityByDate, ([date, count]) => ({ date, count }));
   
   return {
     username,
@@ -298,5 +390,13 @@ export function analyzeData(data: RedditData, username: string): AnalysisResult 
     postTypeDistribution,
     subredditStickiness,
     gildedContent,
+    topSubredditsByComments,
+    topSubredditsByCommentKarma,
+    topSubredditsByPostKarma,
+    yearlyActivityHeatmap,
+    sentimentBreakdown,
+    sentimentBySubreddit,
+    mostPositiveComment,
+    mostNegativeComment,
   };
 }

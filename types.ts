@@ -1,3 +1,4 @@
+// Fix: Replaced incorrect component implementation with proper type definitions.
 export interface RedditAward {
   name: string;
   count: number;
@@ -10,9 +11,10 @@ export interface RedditComment {
   body: string;
   score: number;
   created_utc: number;
-  author_flair_text?: string | null;
-  all_awardings?: RedditAward[];
+  author_flair_text: string | null;
+  all_awardings: RedditAward[];
   permalink: string;
+  sentiment?: { score: number; comparative: number };
 }
 
 export interface RedditPost {
@@ -22,10 +24,10 @@ export interface RedditPost {
   selftext: string;
   score: number;
   created_utc: number;
-  author_flair_text?: string | null;
-  all_awardings?: RedditAward[];
-  is_self?: boolean;
-  is_video?: boolean;
+  author_flair_text: string | null;
+  all_awardings: RedditAward[];
+  is_self: boolean;
+  is_video: boolean;
   post_hint?: string;
 }
 
@@ -35,6 +37,7 @@ export interface RedditData {
 }
 
 export interface AnalysisResult {
+  username: string;
   totalPosts: number;
   totalComments: number;
   totalKarma: number;
@@ -47,11 +50,10 @@ export interface AnalysisResult {
   activityByDay: { day: string; posts: number; comments: number }[];
   topSubreddits: { name: string; count: number }[];
   topWords: { text: string; value: number }[];
-  username: string;
+  topLanguages: { name: string; flag: string; count: number }[];
   mostActiveHour: string;
   leastActiveHour: string;
-  topLanguages: { name: string; flag: string; count: number; }[];
-  userFlairs: { text: string; subreddit: string }[];
+  userFlairs: { subreddit: string; text: string }[];
   activityOverTime: { date: string; posts: number; comments: number }[];
   scoreOverTime: { date: string; avgPostScore: number; avgCommentScore: number }[];
   karmaBySubreddit: { name: string; karma: number }[];
@@ -59,8 +61,16 @@ export interface AnalysisResult {
   bestComment: RedditComment | null;
   worstComment: RedditComment | null;
   totalAwards: number;
-  awards: { name: string; count: number; icon_url: string }[];
+  awards: RedditAward[];
   postTypeDistribution: { name: string; value: number }[];
   subredditStickiness: { name: string; value: number }[];
   gildedContent: (RedditPost | RedditComment)[];
+  topSubredditsByComments: { name: string; count: number }[];
+  topSubredditsByCommentKarma: { name: string; karma: number }[];
+  topSubredditsByPostKarma: { name: string; karma: number }[];
+  yearlyActivityHeatmap: { date: string; count: number }[];
+  sentimentBreakdown: { name: string; value: number }[];
+  sentimentBySubreddit: { name: string; avgScore: number; count: number }[];
+  mostPositiveComment: RedditComment | null;
+  mostNegativeComment: RedditComment | null;
 }
