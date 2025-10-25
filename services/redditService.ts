@@ -1,7 +1,17 @@
 import type { RedditData, RedditPost, RedditComment, RedditTrophy } from '../types';
 
-// The base URL of our own application. The proxy is at /api/reddit-proxy
-const PROXY_PATH = '/api/reddit-proxy';
+interface ProxyConfig {
+    name: string;
+    baseUrl: string;
+    requiresEncoding: boolean;
+}
+
+// A list of proxy services to try in order.
+const PROXIES: ProxyConfig[] = [
+    { name: 'CORSProxy.io', baseUrl: 'https://corsproxy.io/?', requiresEncoding: false },
+    { name: 'AllOrigins', baseUrl: 'https://api.allorigins.win/raw?url=', requiresEncoding: true },
+    { name: 'Self-Hosted Proxy', baseUrl: '/api/reddit-proxy?url=', requiresEncoding: true }
+];
 
 // --- Caching Logic ---
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
@@ -19,57 +29,71 @@ export class RetryableError extends Error {
 
 async function fetchFromReddit(url: string) {
     const jsonUrl = url.endsWith('.json') ? url : `${url}.json`;
-    
     const separator = jsonUrl.includes('?') ? '&' : '?';
     const redditApiUrl = `${jsonUrl}${separator}raw_json=1`;
 
-    // Construct the URL to our own Edge Function proxy
-    const finalUrl = `${PROXY_PATH}?url=${encodeURIComponent(redditApiUrl)}`;
+    let lastError: Error | null = null;
 
-    const response = await fetch(finalUrl);
-
-    if (!response.ok) {
-        const status = response.status;
-
-        if (status === 404) {
-            throw new Error('REDDIT_ERROR_404');
-        }
-
-        if (status === 403) {
-            try {
-                // Check if Reddit provides a specific reason for the 403
-                const errorData = await response.json();
-                if (['private', 'banned', 'suspended'].includes(errorData.reason)) {
-                    // This is a definitive profile issue
-                    throw new Error('REDDIT_ERROR_PRIVATE');
-                }
-            } catch (e) {
-                // If parsing fails, it's not a standard Reddit JSON error response.
-                // This strongly suggests an IP block, firewall, or rate limit page.
-            }
-            // If we're here, it's a generic 403. Treat it as a server block.
-            throw new Error('REDDIT_ERROR_SERVER_BLOCK');
-        }
+    for (const proxy of PROXIES) {
+        const targetUrl = proxy.requiresEncoding ? encodeURIComponent(redditApiUrl) : redditApiUrl;
+        const requestUrl = `${proxy.baseUrl}${targetUrl}`;
         
-        // Handle proxy errors and other Reddit API errors
-        throw new Error(`PROXY_ERROR:${status}`);
-    }
+        try {
+            const response = await fetch(requestUrl);
 
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('MALFORMED_DATA: Content-Type is not JSON.');
-    }
+            if (!response.ok) {
+                const status = response.status;
+                let errorToStore: Error;
 
-    const responseText = await response.text();
-    try {
-        return JSON.parse(responseText);
-    } catch (error) {
-        console.error("Failed to parse JSON response from Reddit.");
-        if (error instanceof Error) {
-            throw new Error(`MALFORMED_JSON:${error.message}`);
+                if (status === 404) {
+                    errorToStore = new Error('REDDIT_ERROR_404');
+                } else if (status === 403) {
+                     try {
+                        const errorData = await response.json();
+                        if (['private', 'banned', 'suspended'].includes(errorData.reason)) {
+                            errorToStore = new Error('REDDIT_ERROR_PRIVATE');
+                        } else {
+                           errorToStore = new Error('REDDIT_ERROR_SERVER_BLOCK');
+                        }
+                    } catch (e) {
+                         errorToStore = new Error('REDDIT_ERROR_SERVER_BLOCK');
+                    }
+                } else {
+                    errorToStore = new Error(`PROXY_ERROR:${status}`);
+                }
+                
+                lastError = errorToStore;
+                continue; // Try the next proxy
+            }
+
+            // --- Success Case ---
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                lastError = new Error('MALFORMED_DATA: Content-Type is not JSON.');
+                continue;
+            }
+
+            const responseText = await response.text();
+            try {
+                return JSON.parse(responseText); // Success! Return the data.
+            } catch (error) {
+                lastError = new Error(error instanceof Error ? `MALFORMED_JSON:${error.message}` : 'MALFORMED_JSON: Unknown parsing error.');
+                continue; // Try next proxy
+            }
+
+        } catch (error) {
+            console.warn(`Proxy failed for ${proxy.name}:`, error);
+            lastError = new Error(error instanceof Error ? error.message : 'A network error occurred.');
+            continue; // Try next proxy
         }
-        throw new Error('MALFORMED_JSON: Unknown parsing error.');
     }
+
+    // If the loop completes, all proxies have failed. Throw the last captured error.
+    if (lastError) {
+        throw lastError;
+    }
+
+    throw new Error('All data fetch attempts failed. Please check your network connection.');
 }
 
 
@@ -182,12 +206,12 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
                 throw new RetryableError(`The analysis service is temporarily unavailable (Error: ${status}). This may be a regional issue with the proxy.`);
             }
             if (error.message === 'REDDIT_ERROR_SERVER_BLOCK') {
-                throw new RetryableError(`Reddit's servers are blocking requests from our app's location. This is a common issue on shared platforms like Vercel. Please try again in a few minutes, or try running the analysis locally to bypass the block.`);
+                throw new RetryableError(`Reddit's servers are temporarily blocking analysis requests. This is common on shared networks and usually resolves on its own. Please try again in a few minutes.`);
             }
             if (error.message.startsWith('MALFORMED_DATA')) {
                  throw new RetryableError(`Failed to analyze "u/${username}" due to malformed data from Reddit. This can be a temporary issue.`);
             }
-            if (error.message.toLowerCase().includes('failed to fetch')) {
+            if (error.message.toLowerCase().includes('failed to fetch') || error.message.toLowerCase().includes('a network error occurred')) {
                  throw new RetryableError('Network error: Could not connect to the analysis service. Please check your connection and any ad-blockers.');
             }
 
