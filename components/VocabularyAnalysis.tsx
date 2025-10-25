@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import type { AnalysisResult, WordStat } from '../types';
 import WordExplorerModal from './WordExplorerModal';
+// FIX: Imported the StatCard component, which was being used without being imported.
+import StatCard from './StatCard';
 
 interface VocabularyAnalysisProps {
   data: AnalysisResult['vocabulary'];
@@ -69,10 +71,7 @@ const VocabularyAnalysis: React.FC<VocabularyAnalysisProps> = ({ data }) => {
   if (!topWords || topWords.length === 0) {
     return (
         <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-700">
-            <div className="text-center">
-                <h3 className="text-2xl font-bold text-white tracking-tight">Vocabulary Analysis</h3>
-                <p className="text-gray-400 mt-1">An overview of the user's lexicon based on their comments.</p>
-            </div>
+             <h3 className="text-lg font-semibold text-white mb-4">Lexical Analysis</h3>
             <p className="text-gray-400 text-center py-10">Not enough comment data to analyze vocabulary.</p>
         </div>
     );
@@ -80,42 +79,31 @@ const VocabularyAnalysis: React.FC<VocabularyAnalysisProps> = ({ data }) => {
 
   return (
     <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-700">
-      <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold text-white tracking-tight">Vocabulary Analysis</h3>
-        <p className="text-gray-400 mt-1">An overview of the user's lexicon based on their comments.</p>
-      </div>
+      <h3 className="text-lg font-semibold text-white mb-4">Lexical Analysis</h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_2fr] gap-4 mb-8">
-        <div className="bg-gray-800 px-3 py-4 rounded-lg shadow-lg text-center border border-gray-700">
-            <p className="text-xs text-gray-400 uppercase tracking-wider truncate">Total Words</p>
-            <p className="text-xl font-bold text-white truncate">{wordCount.toLocaleString()}</p>
-        </div>
-         <div className="bg-gray-800 px-3 py-4 rounded-lg shadow-lg text-center border border-gray-700">
-            <p className="text-xs text-gray-400 uppercase tracking-wider truncate">Unique Words</p>
-            <p className="text-xl font-bold text-white truncate">{uniqueWords.toLocaleString()}</p>
-        </div>
-         <div className="bg-gray-800 px-3 py-4 rounded-lg shadow-lg text-center border border-gray-700">
-            <p className="text-xs text-gray-400 uppercase tracking-wider truncate">Avg. Word Length</p>
-            <p className="text-xl font-bold text-white truncate">{avgWordLength.toFixed(2)}</p>
-        </div>
-        <div className="bg-gray-800 px-3 py-4 rounded-lg shadow-lg text-center border border-gray-700">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <StatCard title="Total Words" value={wordCount.toLocaleString()} />
+        <StatCard title="Unique Words" value={uniqueWords.toLocaleString()} />
+        <StatCard title="Avg. Word Length" value={avgWordLength.toFixed(2)} />
+       
+        <div className="bg-gray-800/50 px-3 py-4 rounded-lg shadow-inner text-center border border-gray-700">
             <p className="text-xs text-gray-400 uppercase tracking-wider flex items-center justify-center">
-                Text Readability
+                Readability
                 <span className="group relative">
                     <InfoIcon />
                     <span className="absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 transform w-60 rounded-md bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none">
-                        Based on the Flesch-Kincaid formula, this score estimates the US grade level required to understand the text.
+                        Based on the Flesch-Kincaid formula, this estimates the US grade level required to understand the text.
                     </span>
                 </span>
             </p>
-            <p className={`text-xl font-bold ${readabilityInfo.color}`}>{readabilityInfo.label}</p>
+            <p className={`text-lg font-bold ${readabilityInfo.color}`}>{readabilityInfo.label}</p>
             <p className="text-xs text-gray-500">{readabilityInfo.description}</p>
         </div>
       </div>
 
       <div className="bg-gray-900/50 p-4 rounded-lg">
-         <h4 className="text-lg font-semibold text-white mb-4 text-center">Most Significant Words</h4>
-         <p className="text-xs text-center text-gray-500 mb-4 -mt-3">(Sized by frequency, colored by sentiment. Click a word to explore.)</p>
+         <h4 className="font-semibold text-white mb-4 text-center">Most Significant Words</h4>
+         <p className="text-xs text-center text-gray-500 mb-4 -mt-3">(Sized by frequency, colored by sentiment. Click to explore.)</p>
          <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 min-h-[200px]">
             {wordCloudData.map(word => (
                 <button

@@ -56,7 +56,7 @@ function getCleanWords(text: string): string[] {
 export function analyzeData(
   data: RedditData,
   username: string
-): AnalysisResult {
+): Omit<AnalysisResult, 'aiAnalysis'> {
     const { posts, comments: rawComments, trophies } = data;
 
     // --- Comment Processing ---

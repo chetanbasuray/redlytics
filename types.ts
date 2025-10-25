@@ -67,8 +67,32 @@ export interface SentimentBySubreddit {
   count: number;
 }
 
+// --- AI-Generated Analysis ---
+
+export interface AITheme {
+  theme: string;
+  emoji: string;
+  description: string;
+}
+
+export interface AIAnalysisResult {
+  personaSummary: string;
+  avatarPrompt: string;
+  avatarImage: string; // Base64 encoded image string
+  activitySummary: string;
+  sentimentSummary: string;
+  communitySummary: string;
+  topThemes: AITheme[];
+}
+
+
+// --- Final Combined Analysis Result ---
+
 export interface AnalysisResult {
   username: string;
+  
+  // AI Generated Analysis
+  aiAnalysis: AIAnalysisResult | null;
 
   // Overview Stats
   totalPosts: number;

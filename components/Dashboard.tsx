@@ -20,17 +20,24 @@ import SentimentBySubredditChart from './SentimentBySubredditChart';
 import SentimentHighlights from './SentimentHighlights';
 import VocabularyAnalysis from './VocabularyAnalysis';
 import ActivityChart from './ActivityChart';
+import AIPersona from './AIPersona';
+import AIInsightCard from './AIInsightCard';
+import AIThematicAnalysis from './AIThematicAnalysis';
 
 interface DashboardProps {
   result: AnalysisResult;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ result }) => {
+  const { aiAnalysis } = result;
   const hasAwards = result.awardsReceived.length > 0;
   const hasTrophies = result.trophies.length > 0;
 
   return (
     <div className="space-y-8">
+      {/* AI Persona and Avatar Section */}
+      {aiAnalysis && <AIPersona summary={aiAnalysis.personaSummary} image={aiAnalysis.avatarImage} />}
+
       {/* Overview Section */}
       <section>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -48,6 +55,7 @@ const Dashboard: React.FC<DashboardProps> = ({ result }) => {
       {/* Activity Section */}
       <section className="space-y-8">
          <h2 className="text-2xl font-bold text-white border-b-2 border-gray-700 pb-2">Activity Breakdown</h2>
+         {aiAnalysis && <AIInsightCard title="AI Activity Summary" summary={aiAnalysis.activitySummary} icon="clock" />}
          <YearlyActivityHeatmap data={result.yearlyActivity} />
          <TimeSeriesChart
             title="Activity Over Time"
@@ -67,6 +75,8 @@ const Dashboard: React.FC<DashboardProps> = ({ result }) => {
       {/* Content & Sentiment Section */}
       <section className="space-y-8">
         <h2 className="text-2xl font-bold text-white border-b-2 border-gray-700 pb-2">Content &amp; Sentiment Analysis</h2>
+        {aiAnalysis && <AIInsightCard title="AI Content & Sentiment Summary" summary={aiAnalysis.sentimentSummary} icon="mood" />}
+        {aiAnalysis && <AIThematicAnalysis themes={aiAnalysis.topThemes} />}
         <VocabularyAnalysis data={result.vocabulary} />
         <BestWorstComments best={result.bestComment} worst={result.worstComment} />
         <SentimentHighlights best={result.mostPositiveComment} worst={result.mostNegativeComment} />
@@ -83,6 +93,7 @@ const Dashboard: React.FC<DashboardProps> = ({ result }) => {
       {/* Community Interaction Section */}
       <section className="space-y-8">
          <h2 className="text-2xl font-bold text-white border-b-2 border-gray-700 pb-2">Community Interaction</h2>
+         {aiAnalysis && <AIInsightCard title="AI Community Summary" summary={aiAnalysis.communitySummary} icon="group" />}
          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <SubredditStickinessChart data={result.subredditStickiness} />
             <KarmaBreakdownChart postKarma={result.postKarma} commentKarma={result.commentKarma} />

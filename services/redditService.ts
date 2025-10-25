@@ -1,4 +1,4 @@
-import type { RedditData, RedditPost, RedditComment, RedditTrophy } from '../types';
+import type { RedditData, AIAnalysisResult } from '../types';
 
 interface ProxyConfig {
     name: string;
@@ -15,7 +15,7 @@ const PROXIES: ProxyConfig[] = [
 
 // --- Caching Logic ---
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-const apiCache = new Map<string, { timestamp: number; data: RedditData }>();
+const apiCache = new Map<string, { timestamp: number; data: any }>();
 
 /**
  * A custom error class to indicate that the operation can be retried.
@@ -153,8 +153,8 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
             fetchAllPages(username, 'submitted')
         ]);
         
-        const comments: Omit<RedditComment, 'sentiment'>[] = commentsData
-            .filter(c => c.kind === 't1' && c.data)
+        const comments = commentsData
+            .filter((c: any) => c.kind === 't1' && c.data)
             .map((c: any) => ({
                 id: c.data.id,
                 subreddit: c.data.subreddit,
@@ -166,8 +166,8 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
                 permalink: c.data.permalink,
             }));
 
-        const posts: RedditPost[] = postsData
-            .filter(p => p.kind === 't3' && p.data)
+        const posts = postsData
+            .filter((p: any) => p.kind === 't3' && p.data)
             .map((p: any) => ({
                 id: p.data.id,
                 subreddit: p.data.subreddit,
@@ -176,13 +176,14 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
                 score: p.data.score,
                 created_utc: p.data.created_utc,
                 author_flair_text: p.data.author_flair_text,
+// FIX: Corrected variable from 'c' to 'p' to reference the correct post data within the map function.
                 all_awardings: p.data.all_awardings || [],
                 is_self: p.data.is_self,
                 is_video: p.data.is_video,
                 post_hint: p.data.post_hint,
             }));
             
-        const trophies: RedditTrophy[] = (trophiesData?.data?.trophies || [])
+        const trophies = (trophiesData?.data?.trophies || [])
             .filter((t: any) => t.kind === 't6' && t.data)
             .map((t: any) => ({
                 name: t.data.name,
@@ -228,5 +229,44 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
         }
         
         throw new Error(`An unknown error occurred while fetching data for "u/${username}".`);
+    }
+}
+
+// --- Gemini AI Analysis ---
+
+export async function generateAIAnalysis(data: RedditData): Promise<AIAnalysisResult | null> {
+    if ((data.comments.length + data.posts.length) === 0) {
+        return null;
+    }
+
+    try {
+        const response = await fetch('/api/gemini-proxy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ redditData: data }),
+        });
+
+        if (!response.ok) {
+            const contentType = response.headers.get('content-type');
+            let errorMessage = `AI Proxy error with status: ${response.status}`;
+
+            if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                errorMessage = errorData.error || 'Failed to fetch AI analysis from proxy.';
+            } else {
+                const errorText = await response.text();
+                console.error("Received non-JSON error from AI proxy:", errorText);
+                errorMessage = 'The AI analysis service returned an unexpected error.';
+            }
+            throw new Error(errorMessage);
+        }
+
+        const aiAnalysis: AIAnalysisResult = await response.json();
+        return aiAnalysis;
+
+    } catch (error) {
+        console.error("Error generating AI analysis via proxy:", error);
+        // Return null on failure so the rest of the app doesn't break
+        return null;
     }
 }

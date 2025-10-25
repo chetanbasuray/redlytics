@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { fetchRedditData, RetryableError } from './services/redditService';
+import { fetchRedditData, generateAIAnalysis, RetryableError } from './services/redditService';
 import { analyzeData } from './utils/dataProcessor';
 import type { AnalysisResult } from './types';
 import UserInput from './components/UserInput';
@@ -32,8 +32,17 @@ function App() {
                 setIsLoading(false);
                 return;
             }
-            const results = analyzeData(redditData, user);
-            setAnalysisResult(results);
+
+            // Run statistical analysis and the comprehensive AI analysis in parallel
+            const [aiAnalysis, statisticalAnalysis] = await Promise.all([
+                generateAIAnalysis(redditData),
+                analyzeData(redditData, user)
+            ]);
+            
+            // Combine the results into the final analysis object
+            const finalResults: AnalysisResult = { ...statisticalAnalysis, aiAnalysis };
+
+            setAnalysisResult(finalResults);
             setIsLoading(false);
             return; // Success
         } catch (err) {
@@ -68,7 +77,7 @@ function App() {
           </h1>
         </header>
         <p className="text-center sm:text-left text-gray-400 mb-8">
-          Enter a Reddit username to generate a detailed analysis of their recent public activity (up to 1000 posts and 1000 comments).
+          Enter a Reddit username to generate a detailed, AI-powered analysis of their recent public activity.
         </p>
 
         <section className="mb-10">
@@ -90,7 +99,7 @@ function App() {
             <>
               <div className="mb-8 text-center">
                 <h2 className="text-3xl font-bold text-white tracking-tight">
-                  Analysis for{' '}
+                  AI Analysis for{' '}
                   <a
                     href={`https://www.reddit.com/user/${analysisResult.username}`}
                     target="_blank"
@@ -110,7 +119,7 @@ function App() {
           <div className="max-w-xl mx-auto">
             <p className="font-bold text-gray-300 text-base mb-2">Redlytics</p>
             <p className="mb-4">
-              An analytics tool for exploring public Reddit user data. Not affiliated with Reddit Inc.
+              An AI-powered analytics tool for exploring public Reddit user data. Not affiliated with Reddit Inc.
             </p>
             <div className="flex justify-center items-center gap-4 text-xs sm:text-sm">
                 <a href="https://www.buymeacoffee.com/donatetochetan" target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline transition-colors">
