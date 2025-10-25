@@ -20,28 +20,30 @@ async function fetchFromReddit(url: string) {
     const response = await fetch(finalUrl);
 
     if (!response.ok) {
-        // Handle errors from our own proxy function (e.g., timeout, internal error)
-        if (response.status >= 500) {
-            throw new Error(`PROXY_ERROR:${response.status}`);
-        }
-        // Handle errors passed through from Reddit's API
-        if (response.status === 404) {
+        const status = response.status;
+
+        if (status === 404) {
             throw new Error('REDDIT_ERROR_404');
         }
-        if (response.status === 403) {
-            throw new Error('REDDIT_ERROR_403');
+
+        if (status === 403) {
+            try {
+                // Check if Reddit provides a specific reason for the 403
+                const errorData = await response.json();
+                if (['private', 'banned', 'suspended'].includes(errorData.reason)) {
+                    // This is a definitive profile issue
+                    throw new Error('REDDIT_ERROR_PRIVATE');
+                }
+            } catch (e) {
+                // If parsing fails, it's not a standard Reddit JSON error response.
+                // This strongly suggests an IP block, firewall, or rate limit page.
+            }
+            // If we're here, it's a generic 403. Treat it as a server block.
+            throw new Error('REDDIT_ERROR_SERVER_BLOCK');
         }
         
-        // Try to parse other errors for more details
-        try {
-            const errorData = await response.json();
-            if (errorData.reason === 'private' || errorData.reason === 'banned' || errorData.reason === 'suspended' ) {
-                 throw new Error('REDDIT_ERROR_403');
-            }
-        } catch (e) { /* Ignore parsing errors, fall back to generic */ }
-        
-        // Generic fallback for other HTTP errors
-        throw new Error(`PROXY_ERROR:${response.status}`);
+        // Handle proxy errors and other Reddit API errors
+        throw new Error(`PROXY_ERROR:${status}`);
     }
 
     const contentType = response.headers.get('content-type');
@@ -173,8 +175,11 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
             if (error.message === 'REDDIT_ERROR_404') {
                 throw new Error(`User "u/${username}" was not found on Reddit.`);
             }
-            if (error.message === 'REDDIT_ERROR_403') {
-                throw new Error(`Failed to access "u/${username}". The profile may be private, or Reddit may be temporarily blocking requests from our server. Please try again later.`);
+            if (error.message === 'REDDIT_ERROR_PRIVATE') {
+                throw new Error(`The profile for "u/${username}" is private, suspended, or banned.`);
+            }
+            if (error.message === 'REDDIT_ERROR_SERVER_BLOCK') {
+                throw new Error(`Reddit's servers are temporarily blocking requests from our app's location. This is common on shared hosting platforms like Vercel and usually resolves on its own. Please try again later.`);
             }
             if (error.message.startsWith('MALFORMED_DATA')) {
                  throw new Error(`Failed to analyze "u/${username}" due to malformed data from Reddit. This can be a temporary issue.`);
