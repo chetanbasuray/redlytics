@@ -61,10 +61,12 @@ export default async function handler(request: Request) {
     // Pick a random User-Agent for this request
     const randomUserAgent = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 
-    // Fetch from the Reddit API with the randomized User-Agent
+    // Fetch from the Reddit API with more realistic, browser-like headers
     const redditResponse = await fetch(parsedUrl.toString(), {
       headers: {
         'User-Agent': randomUserAgent,
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.5',
       },
     });
 

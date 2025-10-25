@@ -182,7 +182,7 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
                 throw new RetryableError(`The analysis service is temporarily unavailable (Error: ${status}). This may be a regional issue with the proxy.`);
             }
             if (error.message === 'REDDIT_ERROR_SERVER_BLOCK') {
-                throw new RetryableError(`Reddit's servers are temporarily blocking requests from our app's location. This is common on shared hosting platforms and usually resolves on its own.`);
+                throw new RetryableError(`Reddit's servers are blocking requests from our app's location. This is a common issue on shared platforms like Vercel. Please try again in a few minutes, or try running the analysis locally to bypass the block.`);
             }
             if (error.message.startsWith('MALFORMED_DATA')) {
                  throw new RetryableError(`Failed to analyze "u/${username}" due to malformed data from Reddit. This can be a temporary issue.`);
