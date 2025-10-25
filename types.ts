@@ -75,7 +75,14 @@ export interface AITheme {
   description: string;
 }
 
+export interface AILanguageUsage {
+  language: string;
+  emoji: string;
+  percentage: number;
+}
+
 export interface AIAnalysisResult {
+  redditBio: string;
   personaSummary: string;
   avatarPrompt: string;
   avatarImage: string; // Base64 encoded image string
@@ -83,6 +90,7 @@ export interface AIAnalysisResult {
   sentimentSummary: string;
   communitySummary: string;
   topThemes: AITheme[];
+  languageUsage: AILanguageUsage[];
 }
 
 

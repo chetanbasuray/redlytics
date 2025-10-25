@@ -76,7 +76,7 @@ function App() {
             Redlytics
           </h1>
         </header>
-        <p className="text-center sm:text-left text-gray-400 mb-8">
+        <p className="text-center sm:text-left text-gray-400 mb-8 max-w-2xl">
           Enter a Reddit username to generate a detailed, AI-powered analysis of their recent public activity.
         </p>
 
@@ -109,6 +109,11 @@ function App() {
                     u/{analysisResult.username}
                   </a>
                 </h2>
+                {analysisResult.aiAnalysis?.redditBio && (
+                  <p className="mt-2 max-w-2xl mx-auto text-lg text-gray-400 italic">
+                    &ldquo;{analysisResult.aiAnalysis.redditBio}&rdquo;
+                  </p>
+                )}
               </div>
               <Dashboard result={analysisResult} />
             </>

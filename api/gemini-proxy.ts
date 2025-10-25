@@ -46,6 +46,10 @@ export default async function handler(req: any, res: any) {
             responseSchema: {
                 type: Type.OBJECT,
                 properties: {
+                    redditBio: {
+                        type: Type.STRING,
+                        description: "A super-concise, one-sentence bio for the user in the style of a Twitter or Instagram profile. Should be witty and capture their essence."
+                    },
                     personaSummary: {
                         type: Type.STRING,
                         description: "A 2-3 sentence narrative summary of the user's personality, communication style, and archetype (e.g., 'Helpful Expert', 'Witty Jokester')."
@@ -75,12 +79,25 @@ export default async function handler(req: any, res: any) {
                             required: ["theme", "emoji", "description"]
                         }
                     },
+                    languageUsage: {
+                        type: Type.ARRAY,
+                        description: "An array of the primary languages used. The percentages should sum to 100.",
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                language: { type: Type.STRING, description: "The name of the detected language (e.g., 'English')." },
+                                emoji: { type: Type.STRING, description: "A single, representative country flag emoji for the language (e.g., '🇬🇧')." },
+                                percentage: { type: Type.INTEGER, description: "The estimated percentage of content written in this language." }
+                            },
+                            required: ["language", "emoji", "percentage"]
+                        }
+                    },
                     avatarPrompt: {
                         type: Type.STRING,
                         description: "A creative, detailed DALL-E or Midjourney style prompt for an image that visually represents the user's persona and interests. Should be abstract and symbolic. Example: 'A philosopher-programmer contemplating a glowing syntax tree under a starlit sky, digital art, vibrant colors, thoughtful mood.'"
                     }
                 },
-                required: ["personaSummary", "activitySummary", "sentimentSummary", "communitySummary", "topThemes", "avatarPrompt"]
+                required: ["redditBio", "personaSummary", "activitySummary", "sentimentSummary", "communitySummary", "topThemes", "languageUsage", "avatarPrompt"]
             }
         }
     });
