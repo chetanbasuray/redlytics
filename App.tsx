@@ -67,7 +67,7 @@ function App() {
             Redlytics
           </h1>
         </header>
-        <p className="text-center sm:text-left text-gray-400 mb-8 max-w-2xl">
+        <p className="text-center sm:text-left text-gray-400 mb-8">
           Enter a Reddit username to generate a detailed analysis of their recent public activity (up to 1000 posts and 1000 comments).
         </p>
 
