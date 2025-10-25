@@ -174,7 +174,7 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
                 throw new Error(`User "u/${username}" was not found on Reddit.`);
             }
             if (error.message === 'REDDIT_ERROR_403') {
-                throw new Error(`The profile for "u/${username}" is private, suspended, or banned.`);
+                throw new Error(`Failed to access "u/${username}". The profile may be private, or Reddit may be temporarily blocking requests from our server. Please try again later.`);
             }
             if (error.message.startsWith('MALFORMED_DATA')) {
                  throw new Error(`Failed to analyze "u/${username}" due to malformed data from Reddit. This can be a temporary issue.`);
