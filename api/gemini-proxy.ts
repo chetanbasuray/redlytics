@@ -1,10 +1,6 @@
 import { GoogleGenAI, Type, Modality } from '@google/genai';
 import type { RedditData, AIAnalysisResult } from '../types';
 
-export const config = {
-  runtime: 'edge',
-};
-
 // Helper to create a concise text corpus from Reddit data
 const createCorpus = (redditData: RedditData): string => {
     const { comments, posts } = redditData;
@@ -15,31 +11,23 @@ const createCorpus = (redditData: RedditData): string => {
 };
 
 
-export default async function handler(req: Request) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
-      status: 405,
-      headers: { 'Allow': 'POST', 'Content-Type': 'application/json' },
-    });
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    const { redditData } = await req.json();
+    const { redditData } = req.body;
 
     if (!redditData) {
-      return new Response(JSON.stringify({ error: 'redditData is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return res.status(400).json({ error: 'redditData is required' });
     }
     
     const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
     if (!apiKey) {
       console.error("Neither GEMINI_API_KEY nor API_KEY is set on the server.");
-      return new Response(JSON.stringify({ error: 'AI API key is not configured on the server.' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return res.status(500).json({ error: 'AI API key is not configured on the server.' });
     }
     
     const ai = new GoogleGenAI({ apiKey });
@@ -125,10 +113,7 @@ export default async function handler(req: Request) {
 
     const finalResult: AIAnalysisResult = { ...analysisResult, avatarImage };
 
-    return new Response(JSON.stringify(finalResult), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return res.status(200).json(finalResult);
 
   } catch (error) {
     console.error("Error in Gemini proxy:", error);
@@ -136,9 +121,6 @@ export default async function handler(req: Request) {
     if (error instanceof Error) {
         message = error.message;
     }
-    return new Response(JSON.stringify({ error: 'Failed to generate AI analysis', details: message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return res.status(500).json({ error: 'Failed to generate AI analysis', details: message });
   }
 }
