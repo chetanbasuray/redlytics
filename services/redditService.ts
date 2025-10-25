@@ -7,6 +7,15 @@ const PROXY_PATH = '/api/reddit-proxy';
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 const apiCache = new Map<string, { timestamp: number; data: RedditData }>();
 
+/**
+ * A custom error class to indicate that the operation can be retried.
+ */
+export class RetryableError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'RetryableError';
+    }
+}
 
 async function fetchFromReddit(url: string) {
     const jsonUrl = url.endsWith('.json') ? url : `${url}.json`;
@@ -167,27 +176,27 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
         console.error("Detailed error in fetchRedditData:", error);
 
         if (error instanceof Error) {
-            // Specific, user-friendly errors
+            // Retryable, user-friendly errors
             if (error.message.startsWith('PROXY_ERROR')) {
                 const status = error.message.split(':')[1];
-                throw new Error(`The analysis service is temporarily unavailable (Error: ${status}). This may be a regional issue with the proxy.`);
+                throw new RetryableError(`The analysis service is temporarily unavailable (Error: ${status}). This may be a regional issue with the proxy.`);
             }
+            if (error.message === 'REDDIT_ERROR_SERVER_BLOCK') {
+                throw new RetryableError(`Reddit's servers are temporarily blocking requests from our app's location. This is common on shared hosting platforms and usually resolves on its own.`);
+            }
+            if (error.message.startsWith('MALFORMED_DATA')) {
+                 throw new RetryableError(`Failed to analyze "u/${username}" due to malformed data from Reddit. This can be a temporary issue.`);
+            }
+            if (error.message.toLowerCase().includes('failed to fetch')) {
+                 throw new RetryableError('Network error: Could not connect to the analysis service. Please check your connection and any ad-blockers.');
+            }
+
+            // Non-retryable, definitive errors
             if (error.message === 'REDDIT_ERROR_404') {
                 throw new Error(`User "u/${username}" was not found on Reddit.`);
             }
             if (error.message === 'REDDIT_ERROR_PRIVATE') {
                 throw new Error(`The profile for "u/${username}" is private, suspended, or banned.`);
-            }
-            if (error.message === 'REDDIT_ERROR_SERVER_BLOCK') {
-                throw new Error(`Reddit's servers are temporarily blocking requests from our app's location. This is common on shared hosting platforms like Vercel and usually resolves on its own. Please try again later.`);
-            }
-            if (error.message.startsWith('MALFORMED_DATA')) {
-                 throw new Error(`Failed to analyze "u/${username}" due to malformed data from Reddit. This can be a temporary issue.`);
-            }
-
-            // Generic browser/network errors
-            if (error.message.toLowerCase().includes('failed to fetch')) {
-                 throw new Error('Network error: Could not connect to the analysis service. Please check your connection and any ad-blockers.');
             }
             
             // Fallback for any other error
