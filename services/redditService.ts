@@ -6,9 +6,11 @@ interface ProxyConfig {
     requiresEncoding: boolean;
 }
 
-// A list of proxy services to try in order.
+// A list of proxy services to try in order. Added more diverse proxies to combat regional blocking.
 const PROXIES: ProxyConfig[] = [
+    { name: 'CORS.sh', baseUrl: 'https://cors.sh/', requiresEncoding: false },
     { name: 'CORSProxy.io', baseUrl: 'https://corsproxy.io/?', requiresEncoding: false },
+    { name: 'ThingProxy', baseUrl: 'https://thingproxy.freeboard.io/fetch/', requiresEncoding: false },
     { name: 'AllOrigins', baseUrl: 'https://api.allorigins.win/raw?url=', requiresEncoding: true },
     { name: 'Self-Hosted Proxy', baseUrl: '/api/reddit-proxy?url=', requiresEncoding: true }
 ];
@@ -176,7 +178,6 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
                 score: p.data.score,
                 created_utc: p.data.created_utc,
                 author_flair_text: p.data.author_flair_text,
-// FIX: Corrected variable from 'c' to 'p' to reference the correct post data within the map function.
                 all_awardings: p.data.all_awardings || [],
                 is_self: p.data.is_self,
                 is_video: p.data.is_video,
@@ -207,7 +208,7 @@ export async function fetchRedditData(username: string): Promise<RedditData> {
                 throw new RetryableError(`The analysis service is temporarily unavailable (Error: ${status}). This may be a regional issue with the proxy.`);
             }
             if (error.message === 'REDDIT_ERROR_SERVER_BLOCK') {
-                throw new RetryableError(`Reddit's servers are temporarily blocking analysis requests. This is common on shared networks and usually resolves on its own. Please try again in a few minutes.`);
+                throw new RetryableError("Reddit's servers appear to be blocking analysis requests from this region. We are trying multiple global proxies, but all are being denied. This can be a temporary issue, please try again later.");
             }
             if (error.message.startsWith('MALFORMED_DATA')) {
                  throw new RetryableError(`Failed to analyze "u/${username}" due to malformed data from Reddit. This can be a temporary issue.`);
