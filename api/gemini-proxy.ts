@@ -79,25 +79,43 @@ export default async function handler(req: any, res: any) {
                             required: ["theme", "emoji", "description"]
                         }
                     },
-                    languageUsage: {
-                        type: Type.ARRAY,
-                        description: "An array of the primary languages used. The percentages should sum to 100.",
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                language: { type: Type.STRING, description: "The name of the detected language (e.g., 'English')." },
-                                emoji: { type: Type.STRING, description: "A single, representative country flag emoji for the language (e.g., '🇬🇧')." },
-                                percentage: { type: Type.INTEGER, description: "The estimated percentage of content written in this language." }
+                    languageAnalysis: {
+                        type: Type.OBJECT,
+                        description: "A detailed analysis of the user's language usage, including a narrative summary and a breakdown by language.",
+                        properties: {
+                            summary: {
+                                type: Type.STRING,
+                                description: "A 1-2 sentence narrative summary of the user's language skills and habits (e.g., 'Primarily communicates in English, but shows proficiency in German within specific technical communities.')."
                             },
-                            required: ["language", "emoji", "percentage"]
-                        }
+                            languages: {
+                                type: Type.ARRAY,
+                                description: "An array of the primary languages used. Percentages should ideally sum to 100.",
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        language: { type: Type.STRING, description: "The name of the detected language (e.g., 'English')." },
+                                        emoji: { type: Type.STRING, description: "A single emoji. Infer the country flag from subreddit context (e.g., r/de suggests 🇩🇪 for German). If the region is ambiguous (e.g., English), use a generic globe '🌐'." },
+                                        percentage: { type: Type.INTEGER, description: "The estimated percentage of content written in this language." },
+                                        topSubreddits: {
+                                            type: Type.ARRAY,
+                                            description: "A list of up to 3 subreddit names (without the 'r/' prefix) where this language is most frequently used by the user.",
+                                            items: {
+                                                type: Type.STRING
+                                            }
+                                        }
+                                    },
+                                    required: ["language", "emoji", "percentage", "topSubreddits"]
+                                }
+                            }
+                        },
+                        required: ["summary", "languages"]
                     },
                     avatarPrompt: {
                         type: Type.STRING,
                         description: "A creative, detailed DALL-E or Midjourney style prompt for an image that visually represents the user's persona and interests. Should be abstract and symbolic. Example: 'A philosopher-programmer contemplating a glowing syntax tree under a starlit sky, digital art, vibrant colors, thoughtful mood.'"
                     }
                 },
-                required: ["redditBio", "personaSummary", "activitySummary", "sentimentSummary", "communitySummary", "topThemes", "languageUsage", "avatarPrompt"]
+                required: ["redditBio", "personaSummary", "activitySummary", "sentimentSummary", "communitySummary", "topThemes", "languageAnalysis", "avatarPrompt"]
             }
         }
     });

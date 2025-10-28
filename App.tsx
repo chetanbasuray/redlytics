@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { fetchRedditData, generateAIAnalysis, RetryableError } from './services/redditService';
 import { analyzeData } from './utils/dataProcessor';
 import type { AnalysisResult } from './types';
@@ -12,6 +12,7 @@ function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [retryMessage, setRetryMessage] = useState<string | null>(null);
+  const [initialUsername, setInitialUsername] = useState<string>('');
 
   const handleAnalyze = useCallback(async (user: string) => {
     if (!user) {
@@ -67,6 +68,16 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const userFromUrl = params.get('user');
+    if (userFromUrl) {
+      setInitialUsername(userFromUrl);
+      handleAnalyze(userFromUrl);
+    }
+  }, [handleAnalyze]);
+
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200 font-sans p-4 sm:p-6 lg:p-8">
       <main className="max-w-7xl mx-auto">
@@ -76,12 +87,12 @@ function App() {
             Redlytics
           </h1>
         </header>
-        <p className="text-center sm:text-left text-gray-400 mb-8 max-w-2xl">
+        <p className="text-center sm:text-left text-gray-400 mb-8">
           Enter a Reddit username to generate a detailed, AI-powered analysis of their recent public activity.
         </p>
 
         <section className="mb-10">
-          <UserInput onAnalyze={handleAnalyze} isLoading={isLoading} />
+          <UserInput onAnalyze={handleAnalyze} isLoading={isLoading} initialUsername={initialUsername} />
         </section>
 
         <section>
@@ -97,24 +108,6 @@ function App() {
           )}
           {analysisResult && (
             <>
-              <div className="mb-8 text-center">
-                <h2 className="text-3xl font-bold text-white tracking-tight">
-                  AI Analysis for{' '}
-                  <a
-                    href={`https://www.reddit.com/user/${analysisResult.username}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sky-400 hover:underline transition-colors"
-                  >
-                    u/{analysisResult.username}
-                  </a>
-                </h2>
-                {analysisResult.aiAnalysis?.redditBio && (
-                  <p className="mt-2 max-w-2xl mx-auto text-lg text-gray-400 italic">
-                    &ldquo;{analysisResult.aiAnalysis.redditBio}&rdquo;
-                  </p>
-                )}
-              </div>
               <Dashboard result={analysisResult} />
             </>
           )}

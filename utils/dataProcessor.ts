@@ -80,6 +80,22 @@ export function analyzeData(
             prev.sentiment.comparative < curr.sentiment.comparative ? prev : curr
         );
     }
+    
+    // --- Post Highlights ---
+    let highestScorePost: RedditPost | null = null;
+    let mostAwardedPost: RedditPost | null = null;
+
+    if (posts.length > 0) {
+        highestScorePost = posts.reduce((prev, curr) => (prev.score > curr.score ? prev : curr));
+
+        mostAwardedPost = posts
+            .map(post => ({
+                ...post,
+                totalAwards: post.all_awardings.reduce((sum, award) => sum + award.count, 0),
+            }))
+            .reduce((prev, curr) => (prev.totalAwards > curr.totalAwards ? prev : curr));
+    }
+
 
     // --- Aggregations & Stats ---
     const activityBySubreddit: Record<string, { posts: number; comments: number; karma: number }> = {};
@@ -271,6 +287,8 @@ export function analyzeData(
         worstComment,
         mostPositiveComment,
         mostNegativeComment,
+        highestScorePost,
+        mostAwardedPost,
         gildedContent,
         postTypes: [
             { name: 'Text Posts', value: posts.filter(p => p.is_self).length },

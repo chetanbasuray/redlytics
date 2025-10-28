@@ -6,6 +6,10 @@ interface TopSubredditsListProps {
 }
 
 const TopSubredditsList: React.FC<TopSubredditsListProps> = ({ title, items }) => {
+  if (!items || items.length === 0) {
+    return null;
+  }
+
   const maxCount = items[0]?.value || 1;
   return (
       <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-700">

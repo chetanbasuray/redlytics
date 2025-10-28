@@ -75,10 +75,16 @@ export interface AITheme {
   description: string;
 }
 
-export interface AILanguageUsage {
+export interface AILanguage {
   language: string;
   emoji: string;
   percentage: number;
+  topSubreddits: string[];
+}
+
+export interface AILanguageAnalysis {
+  summary: string;
+  languages: AILanguage[];
 }
 
 export interface AIAnalysisResult {
@@ -90,7 +96,7 @@ export interface AIAnalysisResult {
   sentimentSummary: string;
   communitySummary: string;
   topThemes: AITheme[];
-  languageUsage: AILanguageUsage[];
+  languageAnalysis: AILanguageAnalysis;
 }
 
 
@@ -121,6 +127,8 @@ export interface AnalysisResult {
   worstComment: RedditComment | null;
   mostPositiveComment: RedditComment | null;
   mostNegativeComment: RedditComment | null;
+  highestScorePost: RedditPost | null;
+  mostAwardedPost: RedditPost | null;
   gildedContent: (RedditPost | RedditComment)[];
   
   // Community Interaction
@@ -136,7 +144,7 @@ export interface AnalysisResult {
   commentLengthDistribution: { name: string; count: number }[];
   
   // Sentiment Analysis
-  sentimentDistribution: { name: string; value: number }[];
+  sentimentDistribution: { name:string; value: number }[];
   sentimentBySubreddit: SentimentBySubreddit[];
 
   // Vocabulary Analysis

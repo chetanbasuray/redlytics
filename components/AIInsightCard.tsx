@@ -15,6 +15,10 @@ const ICONS: Record<string, React.ReactElement> = {
 }
 
 const AIInsightCard: React.FC<AIInsightCardProps> = ({ title, summary, icon }) => {
+  if (!summary) {
+    return null;
+  }
+
   return (
     <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-700">
         <div className="flex items-start gap-4">

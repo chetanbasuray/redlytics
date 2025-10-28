@@ -6,6 +6,9 @@ interface AIPersonaProps {
 }
 
 const AIPersona: React.FC<AIPersonaProps> = ({ summary, image }) => {
+  if (!summary) {
+    return null;
+  }
 
   const renderAvatarContent = () => {
     if (image === 'RATE_LIMITED') {

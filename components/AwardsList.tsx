@@ -13,7 +13,7 @@ interface AwardsListProps {
 
 const AwardsList: React.FC<AwardsListProps> = ({ title, items }) => {
   if (items.length === 0) {
-    return null; // This component is rendered conditionally, so no need for an empty state here
+    return null;
   }
   
   return (

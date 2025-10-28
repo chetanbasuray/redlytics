@@ -1,5 +1,4 @@
 import React from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface PostTypeChartProps {
   data: { name: string; value: number }[];
@@ -17,48 +16,34 @@ const PostTypeChart: React.FC<PostTypeChartProps> = ({ data }) => {
         </div>
     );
   }
-  
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0];
-      const percentage = totalPosts > 0 ? ((data.value / totalPosts) * 100).toFixed(1) : 0;
-      return (
-        <div className="bg-black/80 backdrop-blur-sm p-3 border border-gray-600 rounded-md shadow-lg text-sm">
-          <p className="font-bold" style={{ color: data.payload.fill }}>{`${data.name}`}</p>
-          <p className="text-gray-200 mt-1">{`${data.value.toLocaleString()} posts (${percentage}%)`}</p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-700">
       <h3 className="text-lg font-semibold text-white mb-4">Post Type Distribution</h3>
-      <div style={{ width: '100%', height: 300 }}>
-        <ResponsiveContainer>
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              innerRadius={60}
-              outerRadius={100}
-              fill="#8884d8"
-              dataKey="value"
-              nameKey="name"
-              paddingAngle={2}
-            >
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(147, 197, 253, 0.1)' }} />
-            <Legend iconType="circle" wrapperStyle={{fontSize: "14px", paddingTop: "20px"}} />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+      <ul className="space-y-4">
+        {data.map((item, index) => {
+          const percentage = totalPosts > 0 ? (item.value / totalPosts) * 100 : 0;
+          return (
+            <li key={item.name} className="text-sm">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-gray-300">{item.name}</span>
+                <span className="font-mono text-gray-400">
+                  {item.value.toLocaleString()} ({percentage.toFixed(1)}%)
+                </span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className="h-2 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${percentage}%`,
+                    backgroundColor: COLORS[index % COLORS.length]
+                  }}
+                ></div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 };
